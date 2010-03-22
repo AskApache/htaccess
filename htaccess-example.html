@@ -1,0 +1,381 @@
+<html>
+<head>
+<title>htaccess-file example</title>
+<meta name="Generator" content="Vim/6.3">
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<a href="http://www.askapache.com/htaccess/" title=".htaccess tips, tricks, tutorials, guides">.htaccess examples</a>
+<pre>
+<font color="#8080ff"># Place a .htaccess file in each directory you want to protect.</font>
+<font color="#8080ff">########################################################################</font>
+<font color="#8080ff">#                    SECURITY / ACCESS CONTROL                         #</font>
+<font color="#8080ff"># If the web server's AllowOverride allows AUTHCONFIG to be overridden #</font>
+<font color="#8080ff">########################################################################</font>
+<font color="#8080ff">#</font>
+<font color="#8080ff"># Save both .htpasswd and .htgroup files in a directory above &quot;documentroot&quot; directory</font>
+<font color="#8080ff"># (e.g. not in or below /apache/htdocs) but could be below &quot;serverroot&quot; directory</font>
+<font color="#8080ff"># (e.g. below /apache).</font>
+
+<font color="#8080ff"># This will pop-up a user/password dialog box saying Realm = </font>
+<font color="#00ffff">AuthName</font> <font color="#ff6060">&quot;Restricted Area&quot;</font>
+
+<font color="#8080ff"># AuthType is normally basic.  Not very secure until &quot;Digest&quot; type becomes prevalent</font>
+<font color="#00ffff">AuthType</font> <font color="#ff6060">basic</font>
+
+<font color="#8080ff"># If value of AuthUserFile doesn't begin with a slash, it is treated as</font>
+<font color="#8080ff"># relative to the ServerRoot (not DocumentRoot!)</font>
+<font color="#00ffff">AuthUserFile</font> <font color="#ff6060">&quot;/userhome/blahBlah/.htpasswd&quot;</font>
+<font color="#00ffff">AuthGroupFile</font> <font color="#ff6060">&quot;/userhome/blahBlah/.htgroup&quot;</font>
+
+<font color="#8080ff"># Each line of the user file contains a username followed by a colon, followed by the crypt()</font>
+<font color="#8080ff"># encrypted password. The behavior of multiple occurrences of the same user is undefined. </font>
+<font color="#8080ff"># You can generate a password file on your system by typing commands on the OS prompt as follows:</font>
+<font color="#8080ff">#    htpasswd -c Filename username     # Creates a password file 'Filename' with 'username'</font>
+<font color="#8080ff">#                                      # as the first user. It will prompt for the new password.</font>
+<font color="#8080ff">#    htpasswd Filename username2       # Adds or modifies in password file 'Filename' the 'username2'. </font>
+<font color="#8080ff">#</font>
+<font color="#8080ff"># Each line of the group file contains a groupname followed by a colon, followed by </font>
+<font color="#8080ff"># the member usernames separated by spaces. For example, put this on one line in the .htgroup file:</font>
+<font color="#8080ff"># mygroup: bob joe anne</font>
+
+<font color="#8080ff"># This set to off will forward a not-found userid to the next-in-line module for authentication.</font>
+<font color="#8080ff"># 'On' is the default It is better that way.</font>
+<font color="#8080ff">#AuthAuthoritative off</font>
+
+<font color="#8080ff"># Now, we allow specific users or groups to get in.</font>
+<font color="#8080ff"># require user joe john mary</font>
+<font color="#ff6060">require</font> valid-<font color="#ff6060">user</font>
+<font color="#ff6060">require</font> <font color="#ff6060">group</font> family friends
+
+<font color="#8080ff"># More Authentication related, rarely used </font>
+<font color="#8080ff"># AuthDBGroupFile </font>
+<font color="#8080ff"># AuthDBUserFile </font>
+<font color="#8080ff"># AuthDBAuthoritative </font>
+<font color="#8080ff"># AuthDBMGroupFile </font>
+<font color="#8080ff"># AuthDBMUserFile </font>
+<font color="#8080ff"># AuthDBMAuthoritative </font>
+<font color="#8080ff"># AuthDigestFile </font>
+<font color="#8080ff"># AuthDigestGroupFile </font>
+<font color="#8080ff"># AuthDigestQop </font>
+<font color="#8080ff"># AuthDigestNonceLifetime </font>
+<font color="#8080ff"># AuthDigestNonceFormat </font>
+<font color="#8080ff"># AuthDigestNcCheck </font>
+<font color="#8080ff"># AuthDigestAlgorithm </font>
+<font color="#8080ff"># AuthDigestDomain </font>
+<font color="#8080ff"># Using Digest Authentication</font>
+
+
+<font color="#8080ff">###############################################################################</font>
+<font color="#8080ff"># From here on, if something is not working as you might expect, try to make sure that </font>
+<font color="#8080ff"># the corresponding AllowOverride is enabled in ,  or  sections</font>
+<font color="#8080ff"># of server configuarion files (generally httpd.conf, can be access.conf or srm.conf).</font>
+<font color="#8080ff"># Allowoverride could be:</font>
+<font color="#8080ff"># 1. AuthConfig (allows AuthName, AuthUserFile, require etc. in .htaccess file)</font>
+<font color="#8080ff"># 2. FileInfo (allows AddType, DefaultType, ErrorDocument etc. in .htaccess file) </font>
+<font color="#8080ff"># 3. Indexes (allows DirectoryIndex, FancyIndexing, IndexOptions etc. in .htaccess file) </font>
+<font color="#8080ff"># 4. Limit (allows use of allow, deny and order directives which control access by host)</font>
+<font color="#8080ff"># 5. Options (allows use of options directive in .htaccess file - see below)</font>
+<font color="#8080ff"># 6. All (allows all of the above in .htaccess file.  Rare)</font>
+<font color="#8080ff"># 7. None (allows none of the above in .htaccess file.  Rare)</font>
+<font color="#8080ff"># Usually, AuthConfig is allowed.  Rest is up to the particular web host company.</font>
+<font color="#8080ff">#</font>
+<font color="#8080ff"># If you get server errors after putting this file in, try disabling</font>
+<font color="#8080ff"># each section below one-by-one to see what your web hosting company</font>
+<font color="#8080ff"># allows (or you can ask them :)</font>
+<font color="#8080ff">###############################################################################</font>
+
+
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># If the web server's AllowOverride allows FILEINFO to be overridden #</font>
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># CookieTracking, AddType, DefaultType, AddHandler, Action, ErrorDocument</font>
+<font color="#8080ff"># Redirect, Redirectmatch, RedirectPermanent, RedirectTemp</font>
+<font color="#8080ff"># AddEncoding, AddCharset, AddLanguage, LanguagePriority, DefaultLanguage</font>
+
+
+<font color="#8080ff">#### Comment it out if UserTrack module is not loaded in the server</font>
+<font color="#8080ff">#CookieName &quot;woiqatty&quot;</font>
+<font color="#8080ff">#CookieTracking on</font>
+
+<font color="#8080ff"># Tweak mime.types without actually editing it, or make certain files to be certain types.</font>
+<font color="#8080ff">#AddType application/x-httpd-php3 .phtml</font>
+<font color="#00ffff">AddType</font> application/x-httpd-php3 .php
+<font color="#00ffff">AddType</font> application/x-httpd-php3 .php3
+<font color="#00ffff">AddType</font> application/x-httpd-php3-source .phps
+<font color="#00ffff">AddType</font> application/x-tar .tgz
+
+<font color="#8080ff"># In this directory, default filetype is this one if Server cannot</font>
+<font color="#8080ff"># otherwise determine from filename extensions.</font>
+<font color="#8080ff"># Mostly text or HTML - &quot;text/plain&quot;, gif images - &quot;image/gif&quot;, </font>
+<font color="#8080ff"># compiled porgrams - &quot;application/octet-stream&quot;</font>
+<font color="#00ffff">DefaultType</font> text/plain
+<font color="#8080ff"># DefaultType image/gif</font>
+<font color="#8080ff"># DefaultType  application/octet-stream</font>
+
+<font color="#8080ff">################### THIS IS IMPORTANT! #####################</font>
+<font color="#8080ff"># AddHandler allows you to map certain file extensions to &quot;handlers&quot;,</font>
+<font color="#8080ff"># actions unrelated to filetype. These can be either built into the server</font>
+<font color="#8080ff"># or added with the Action command (see below).</font>
+<font color="#8080ff"># If you want to use server side includes, or CGI outside</font>
+<font color="#8080ff"># ScriptAliased directories, uncomment the following lines.</font>
+
+<font color="#8080ff"># To use CGI scripts:</font>
+<font color="#00ffff">AddHandler</font> cgi-<font color="#00ffff">script</font> cgi pl
+
+<font color="#8080ff"># To use server-parsed HTML files</font>
+<font color="#00ffff">AddType</font> text/html .shtml
+<font color="#00ffff">AddHandler</font> server-parsed .shtml
+
+<font color="#8080ff"># Example of a file whose contents are sent as is so as to tell the client that a file has redirected. </font>
+<font color="#8080ff"># Status: 301 Now where did I leave that URL </font>
+<font color="#8080ff"># Location: <A HREF="http://xyz.abc.com/foo/bar.html">http://xyz.abc.com/foo/bar.html</A> </font>
+<font color="#8080ff"># Content-type: text/html </font>
+<font color="#8080ff"># </font>
+<font color="#8080ff"># &lt;HTML&gt; &lt;HEAD&gt; &lt;TITLE&gt; Lame excuses'R'us &lt;/TITLE&gt;&lt;/HEAD&gt;&lt;BODY&gt; </font>
+<font color="#8080ff"># &lt;H1&gt;Fred's exceptionally wonderful page has moved to </font>
+<font color="#8080ff"># &lt;A HREF=&quot;<A HREF="http://xyz.abc.com/foo/bar.html&quot;">http://xyz.abc.com/foo/bar.html&quot;</A>&gt;Joe's&lt;/A&gt; site. </font>
+<font color="#8080ff"># &lt;/H1&gt;&lt;/BODY&gt;&lt;/HTML&gt; </font>
+<font color="#8080ff">#</font>
+<font color="#8080ff"># Server always adds a Date: and Server: header to the data returned to the client, </font>
+<font color="#8080ff"># so don't include these in the file.</font>
+<font color="#8080ff">#AddHandler send-as-is asis</font>
+
+<font color="#8080ff"># If you wish to use server-parsed imagemap files, use</font>
+<font color="#00ffff">AddHandler</font> imap-file <font color="#ff6060">map</font>
+
+<font color="#8080ff"># For content negotiation use</font>
+<font color="#8080ff">#AddHandler type-map var</font>
+
+<font color="#8080ff"># Action lets you define media types that will execute a script whenever</font>
+<font color="#8080ff"># a matching file is called. This eliminates the need for repeated URL</font>
+<font color="#8080ff"># pathnames for oft-used CGI file processors.</font>
+<font color="#8080ff"># Format: Action action-type cgi-script</font>
+<font color="#8080ff"># Format: Action media/type /cgi-script/location</font>
+<font color="#8080ff"># Format: Action handler-name /cgi-script/location</font>
+<font color="#8080ff">#Action cgi-script /cgi-bin/default.cgi</font>
+
+<font color="#8080ff"># Redirect [status] ABSOLUTE-path-of-old-url new-url.  Default status is temp.</font>
+<font color="#8080ff"># Status is one of permanent (returns 301), temp (returns 302), </font>
+<font color="#8080ff"># seeother (returns 303, see other document in same place), </font>
+<font color="#8080ff"># gone (returns 410, no longer available at all) - Don't specify new-URL</font>
+<font color="#8080ff"># Here, if the client requests <A HREF="http://myserver/service/foo.txt">http://myserver/service/foo.txt</A>, it will be told </font>
+<font color="#8080ff"># to access <A HREF="http://foo2.bar.com/service/foo.txt">http://foo2.bar.com/service/foo.txt</A> instead. </font>
+<font color="#8080ff">#Redirect /service <A HREF="http://foo2.bar.com/service">http://foo2.bar.com/service</A></font>
+
+<font color="#8080ff"># Customizable error response.  Three styles:</font>
+<font color="#8080ff"># 1. Plain Text - the (&quot;) marks it as text, it does not get output</font>
+<font color="#8080ff">#ErrorDocument 500 &quot;The server made a boo boo.</font>
+<font color="#8080ff"># 2. Local Redirects - e.g. To redirect to local URL /missing.html</font>
+<font color="#8080ff">#ErrorDocument 404 /missing.html</font>
+<font color="#8080ff">#ErrorDocument 404 /cgi-bin/missing_handler.pl</font>
+<font color="#8080ff"># 3. External Redirects (All env. variables don't go to the redirected location)</font>
+<font color="#8080ff">#ErrorDocument 402 <A HREF="http://some.other_server.com/subscription_info.html">http://some.other_server.com/subscription_info.html</A></font>
+
+
+<font color="#8080ff"># Mosaic/X 2.1+ browsers can uncompress information on the fly</font>
+<font color="#00ffff">AddEncoding</font> x-compress Z
+<font color="#00ffff">AddEncoding</font> x-gzip gz tgz
+
+<font color="#8080ff">#Content negotiation directives</font>
+<font color="#8080ff">#AddLanguage fr .fr</font>
+<font color="#8080ff"># Just list the languages in decreasing order of preference.</font>
+<font color="#00ffff">LanguagePriority</font> en fr it
+
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># If the web server's AllowOverride allows INDEXES to be overridden  #</font>
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># DirectoryIndex, ExpiresActive, ExpiresByType, ExpiresDefault</font>
+<font color="#8080ff"># ImapBase, ImapDefault, ImapMenu</font>
+<font color="#8080ff"># FancyIndexing, IndexOptions, IndexOrderDefault, IndexIgnore, HeaderName, ReadmeName</font>
+<font color="#8080ff"># AddDescription, AddAlt, AddAltByEncoding, AddAltByType</font>
+<font color="#8080ff"># AddIcon, AddIconByEncoding, AddIconByType, DefaultIcon</font>
+
+<font color="#8080ff"># Default file to send to the client if none specified.  </font>
+<font color="#8080ff"># Separate multiple entries with spaces.</font>
+<font color="#8080ff"># If none of these files exists in a directory, a directory listing may</font>
+<font color="#8080ff"># be returned depending on Options Indexes setting.</font>
+<font color="#00ffff">DirectoryIndex</font> index.html index.htm index.shtml index.php index.php3 index.pl index.cgi /cgi-bin/index.cgi
+
+<font color="#8080ff"># Must enable expirations to use other expire directives</font>
+<font color="#8080ff">#ExpiresActive on</font>
+<font color="#8080ff"># 'M' means that the file's last modification time should be used as the base time</font>
+<font color="#8080ff"># 'A' means the client's access time should be used as base time</font>
+<font color="#8080ff">#ExpiresDefault M604800</font>
+<font color="#8080ff"># Expire GIF images after a month in the client's cache</font>
+<font color="#8080ff">#ExpiresByType image/gif A2592000  </font>
+<font color="#8080ff"># HTML documents are good for a week from the time they were changed, period     </font>
+<font color="#8080ff">#ExpiresByType text/html M604800  </font>
+<font color="#8080ff">#ExpiresByType text/html &quot;access plus 1 month 15 days 2 hours&quot; </font>
+<font color="#8080ff">#ExpiresDefault &quot;modification plus 5 hours 3 minutes&quot; </font>
+<font color="#8080ff">#ExpiresByType text/html &quot;now plus 1 month 15 days 2 hours&quot;</font>
+
+<font color="#8080ff"># ImapMenu can be none, formatted, semiformatted, unformatted</font>
+<font color="#00ffff">ImapMenu</font> <font color="#ff6060">semiformatted</font>
+<font color="#8080ff"># ImapDefault can be error, nocontent, map, referer, or some useful URL.</font>
+<font color="#8080ff">#  The .map file overrides this.</font>
+<font color="#00ffff">ImapDefault</font> <font color="#ff6060">map</font>
+<font color="#8080ff"># ImapBase can be map, referer, URL.  The .map file overrides this.</font>
+<font color="#00ffff">ImapBase</font> <font color="#ff6060">referer</font>
+
+<font color="#8080ff">############## THIS HERE IS </font><span style="background-color: #ffff00"><font color="#808080">NOT</font></span><font color="#8080ff"> TOO IMPORTANT! ###################</font>
+<font color="#8080ff"># Apache version dependent.  If Options indexes is allowed, Server will behave as follows:</font>
+<font color="#8080ff">#IndexOptions FancyIndexing FoldersFirst NameWidth=* DescriptionWidth=*</font>
+<font color="#8080ff">#IndexOptions FancyIndexing NameWidth=*</font>
+<font color="#8080ff">#IndexOptions +IconHeight=20 +IconWidth=20 +IconsAreLinks</font>
+<font color="#8080ff">#IndexOptions +ScanHTMLTitles</font>
+<font color="#8080ff">#IndexOptions +SuppressColumnSorting </font>
+<font color="#8080ff">#IndexOptions +SuppressDescription </font>
+<font color="#8080ff">#IndexOptions +SuppressLastModified </font>
+<font color="#8080ff">#IndexOptions +SuppressSize </font>
+<font color="#8080ff">#IndexOptions SuppressHTMLPreamble</font>
+<font color="#8080ff"># Sort by Name, Date, Size, or Description? Default is name.</font>
+<font color="#8080ff">#IndexOrderDefault Ascending Name</font>
+<font color="#8080ff"># Don't list these files</font>
+<font color="#8080ff">#IndexIgnore .??* *~ *# HEADER* README* RCS CVS *,v *,t</font>
+
+<font color="#8080ff"># Server .conf should already have set these up.  You should only set</font>
+<font color="#8080ff"># the missing ones in .htaccess files (if you ever find out)</font>
+<font color="#8080ff">#AddIconByEncoding (CMP,/icons/compressed.gif) x-compress x-gzip</font>
+<font color="#8080ff">#AddIconByType (TXT,/icons/text.gif) text/*</font>
+<font color="#8080ff">#AddIconByType (IMG,/icons/image2.gif) image/*</font>
+<font color="#8080ff">#AddIcon /icons/binary.gif .bin .exe</font>
+<font color="#8080ff">#AddIcon /icons/text.gif .txt</font>
+<font color="#8080ff">#AddIcon /icons/uuencoded.gif .uu</font>
+<font color="#8080ff">#AddIcon /icons/hand.right.gif README</font>
+<font color="#8080ff">#AddIcon /icons/folder.gif ^^DIRECTORY^^</font>
+<font color="#8080ff">#AddIcon /icons/blank.gif ^^BLANKICON^^</font>
+<font color="#8080ff"># If no file type matches..</font>
+<font color="#8080ff">#DefaultIcon /icons/unknown.gif</font>
+<font color="#8080ff">#AddDescription &quot;GZIP compressed document&quot; .gz</font>
+<font color="#00ffff">AddDescription</font> <font color="#ff6060">&quot;Java class file&quot;</font> .class
+<font color="#00ffff">AddDescription</font> <font color="#ff6060">&quot;Java source file&quot;</font> .java
+<font color="#00ffff">AddDescription</font> <font color="#ff6060">&quot;Java Server Pages source file&quot;</font> .jsp
+<font color="#8080ff"># Server writes the contents of HeaderName file before the directory listing by adding .html or .txt to the specified name.</font>
+<font color="#8080ff"># Server writes the contents of ReadmeName after the directory listing.</font>
+<font color="#8080ff"># The server looks for the-specified-name.html, then the-specified-name.txt</font>
+<font color="#00ffff">ReadmeName</font> README
+<font color="#00ffff">HeaderName</font> <font color="#00ffff">HEADER</font>
+<font color="#8080ff">############## END OF </font><span style="background-color: #ffff00"><font color="#808080">NOT</font></span><font color="#8080ff">-TOO-IMPORTANT ###################</font>
+
+
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># If the web server's AllowOverride allows LIMIT to be overridden    #</font>
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># order, allow from, deny from, allow from env, deny from env</font>
+
+<font color="#8080ff"># Controls which domain name or computer host client can get stuff from this server.  </font>
+<font color="#8080ff"># No space between allow and deny in order (just comma).  allow from all is default</font>
+<font color="#8080ff">#order allow,deny</font>
+<font color="#8080ff">#deny from all</font>
+<font color="#8080ff">#deny from www.yahoo.com</font>
+<font color="#8080ff">#allow from www.yahoo.com</font>
+<font color="#8080ff"># The allow from env directive controls access to a directory by the existence</font>
+<font color="#8080ff"># (or non-existence) of an environment variable. Example: </font>
+<font color="#8080ff"># BrowserMatch ^KnockKnock/2.0 let_me_in</font>
+<font color="#8080ff"># </font>
+<font color="#8080ff">#     order deny,allow</font>
+<font color="#8080ff">#     deny from all</font>
+<font color="#8080ff">#     allow from env=let_me_in</font>
+<font color="#8080ff"># </font>
+
+
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># If the web server's AllowOverride allows OPTIONS to be overridden  #</font>
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># Options, XBitHack, CheckSpelling, Example - in order of importance</font>
+
+<font color="#8080ff"># Options:</font>
+<font color="#8080ff"># ExecCGI - Execution of CGI scripts is permitted</font>
+<font color="#8080ff"># FollowSymLinks - Server will follow symbolic links in this directory</font>
+<font color="#8080ff"># SymLinksIfOwnerMatch - Server follows sym links if target file/dir owned by the same user id as the link</font>
+<font color="#8080ff"># Includes - Server-side includes are permitted</font>
+<font color="#8080ff"># IncludesNOEXEC - Server-side includes permitted, #exec and #include of CGI scripts are disabled</font>
+<font color="#8080ff"># Indexes - Lists directory if no index file is found</font>
+<font color="#8080ff"># MultiViews - Content negotiated MultiViews are allowed. </font>
+<font color="#8080ff"># Note that &quot;MultiViews&quot; must be named *explicitly* --- &quot;Options All&quot; doesn't give it to you.</font>
+<font color="#8080ff"># This here resets any previous settings</font>
+<font color="#8080ff"># Options IncludesNOEXEC MultiViews</font>
+<font color="#00ffff">Options</font> <font color="#ff6060">Includes</font> <font color="#ff6060">MultiViews</font>
+<font color="#8080ff"># Or, add/subtract from prior options</font>
+<font color="#8080ff">#Options +Indexes -Includes</font>
+<font color="#8080ff"># To disable execution of SSI and CGI in this directory</font>
+<font color="#8080ff">#Options -Includes -IncludesNOEXEC -ExecCGI</font>
+
+<font color="#8080ff"># Checks &quot;user&quot; execute permission on file.  If yes, executes it as SSI.</font>
+<font color="#8080ff"># Then, no need for special file extension .shtml</font>
+<font color="#00ffff">XBitHack</font> <font color="#ff6060">on</font>
+
+<font color="#8080ff"># Matches document(s) if maximum one spelling mistake</font>
+<font color="#8080ff"># CheckSpelling  on</font>
+
+<font color="#8080ff">#Example directive is Apache API related for Apache programmers</font>
+
+
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># The following do not depend on AllowOverride setting at all        #</font>
+<font color="#8080ff"># These are either always available or need a loaded module          #</font>
+<font color="#8080ff">######################################################################</font>
+<font color="#8080ff"># Generally available:</font>
+<font color="#8080ff"># Satisfy, ServerSignature, LimitRequestBody</font>
+<font color="#8080ff">#  ... ,  ... </font>
+<font color="#8080ff">#  ... ,  ... </font>
+<font color="#8080ff">#  ... ,  ... </font>
+<font color="#8080ff"># ForceType, SetHandler, RemoveHandler, AddDefaultCharset</font>
+<font color="#8080ff"># Optionally installed modules:</font>
+<font color="#8080ff"># CookieName, Header</font>
+
+<font color="#8080ff"># Satisfy any is used to password restrict an area, but to let clients from particular</font>
+<font color="#8080ff"># addresses as defined in 'allow from' to get in without prompting for a password. Default is &quot;all&quot;</font>
+<font color="#8080ff">#Satisfy any</font>
+
+<font color="#8080ff"># Access control by file name in a directory where .htaccess file is placed:</font>
+<font color="#8080ff"># The following lines prevent .htaccess files from being viewed by</font>
+<font color="#8080ff"># Web clients.  Since .htaccess files often contain authorization</font>
+<font color="#8080ff"># information, access is disallowed for security reasons.  Comment</font>
+<font color="#8080ff"># these lines out if you want Web visitors to see the contents of</font>
+<font color="#8080ff"># .htaccess files.  If you change the AccessFileName directive above,</font>
+<font color="#8080ff"># be sure to make the corresponding changes here.</font>
+
+<font color="#ff40ff">    order </font><font color="#ff6060">allow</font><font color="#ff40ff">,</font><font color="#ff6060">deny</font>
+    <font color="#ff40ff">deny from </font><font color="#00ffff">all</font>
+
+
+<font color="#8080ff"># Can use reg exp  instead of line below.</font>
+<font color="#8080ff">#</font>
+<font color="#8080ff">#       order allow,deny</font>
+<font color="#8080ff">#       allow from all</font>
+<font color="#8080ff">#</font>
+
+<font color="#8080ff"># Optionally add a line containing the server version and virtual host</font>
+<font color="#8080ff"># name to server-generated pages (error documents, FTP directory listings,</font>
+<font color="#8080ff"># mod_status and mod_info output etc., but not CGI generated documents).</font>
+<font color="#8080ff"># Set to &quot;EMail&quot; to also include a mailto: link to the ServerAdmin.</font>
+<font color="#8080ff">#ServerSignature On</font>
+<font color="#8080ff">#ServerSignature EMail</font>
+
+<font color="#8080ff"># Specify cookie name to be used if CookieTracking is set to on.  Needs mod_usertrack installed.</font>
+<font color="#8080ff"># I specify this up in FileInfo overriding</font>
+<font color="#8080ff"># CookieName &quot;woiqatty&quot;</font>
+
+<font color="#8080ff"># To control denial-of-service attacks</font>
+<font color="#00ffff">LimitRequestBody</font> 3000000
+
+<font color="#8080ff"># For documents served through this directory, modify headers as follows:</font>
+<font color="#8080ff"># Can also be set, add.  Mod_header not generally available.</font>
+<font color="#8080ff">#Header append Author &quot;V. Singla&quot;   </font>
+<font color="#8080ff">#Header unset Author</font>
+
+<font color="#8080ff">################# For Apache Windows version only ######################</font>
+
+<font color="#8080ff"># use this to specify whether Apache should search windows registry</font>
+<font color="#8080ff"># or the #! line of the called script itself for interpreter name and location.</font>
+<font color="#8080ff">#ScriptInterpreterSource script</font>
+<font color="#8080ff"># Tries to match the called file's extension in registry (e.g. search registry for .pl or .cgi)</font>
+<font color="#8080ff">#ScriptInterpreterSource registry</font>
+
+
+<font color="#8080ff">############ END OF .htaccess FILE #############</font>
+</pre>
+</body>
+</html>

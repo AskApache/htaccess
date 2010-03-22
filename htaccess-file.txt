@@ -1,0 +1,369 @@
+# Place a .htaccess file in each directory you want to protect.
+########################################################################
+#                    SECURITY / ACCESS CONTROL                         #
+# If the web server's AllowOverride allows AUTHCONFIG to be overridden #
+########################################################################
+#
+# Save both .htpasswd and .htgroup files in a directory above "documentroot" directory
+# (e.g. not in or below /apache/htdocs) but could be below "serverroot" directory
+# (e.g. below /apache).
+
+# This will pop-up a user/password dialog box saying Realm = 
+AuthName "Restricted Area"
+
+# AuthType is normally basic.  Not very secure until "Digest" type becomes prevalent
+AuthType basic
+
+# If value of AuthUserFile doesn't begin with a slash, it is treated as
+# relative to the ServerRoot (not DocumentRoot!)
+AuthUserFile "/userhome/blahBlah/.htpasswd"
+AuthGroupFile "/userhome/blahBlah/.htgroup"
+
+# Each line of the user file contains a username followed by a colon, followed by the crypt()
+# encrypted password. The behavior of multiple occurrences of the same user is undefined. 
+# You can generate a password file on your system by typing commands on the OS prompt as follows:
+#    htpasswd -c Filename username     # Creates a password file 'Filename' with 'username'
+# 			               # as the first user. It will prompt for the new password.
+#    htpasswd Filename username2       # Adds or modifies in password file 'Filename' the 'username2'. 
+#
+# Each line of the group file contains a groupname followed by a colon, followed by 
+# the member usernames separated by spaces. For example, put this on one line in the .htgroup file:
+# mygroup: bob joe anne
+
+# This set to off will forward a not-found userid to the next-in-line module for authentication.
+# 'On' is the default It is better that way.
+#AuthAuthoritative off
+
+# Now, we allow specific users or groups to get in.
+# require user joe john mary
+require valid-user
+require group family friends
+
+# More Authentication related, rarely used 
+# AuthDBGroupFile 
+# AuthDBUserFile 
+# AuthDBAuthoritative 
+# AuthDBMGroupFile 
+# AuthDBMUserFile 
+# AuthDBMAuthoritative 
+# AuthDigestFile 
+# AuthDigestGroupFile 
+# AuthDigestQop 
+# AuthDigestNonceLifetime 
+# AuthDigestNonceFormat 
+# AuthDigestNcCheck 
+# AuthDigestAlgorithm 
+# AuthDigestDomain 
+# Using Digest Authentication
+
+
+###############################################################################
+# From here on, if something is not working as you might expect, try to make sure that 
+# the corresponding AllowOverride is enabled in ,  or  sections
+# of server configuarion files (generally httpd.conf, can be access.conf or srm.conf).
+# Allowoverride could be:
+# 1. AuthConfig (allows AuthName, AuthUserFile, require etc. in .htaccess file)
+# 2. FileInfo (allows AddType, DefaultType, ErrorDocument etc. in .htaccess file) 
+# 3. Indexes (allows DirectoryIndex, FancyIndexing, IndexOptions etc. in .htaccess file) 
+# 4. Limit (allows use of allow, deny and order directives which control access by host)
+# 5. Options (allows use of options directive in .htaccess file - see below)
+# 6. All (allows all of the above in .htaccess file.  Rare)
+# 7. None (allows none of the above in .htaccess file.  Rare)
+# Usually, AuthConfig is allowed.  Rest is up to the particular web host company.
+#
+# If you get server errors after putting this file in, try disabling
+# each section below one-by-one to see what your web hosting company
+# allows (or you can ask them :)
+###############################################################################
+
+
+######################################################################
+# If the web server's AllowOverride allows FILEINFO to be overridden #
+######################################################################
+# CookieTracking, AddType, DefaultType, AddHandler, Action, ErrorDocument
+# Redirect, Redirectmatch, RedirectPermanent, RedirectTemp
+# AddEncoding, AddCharset, AddLanguage, LanguagePriority, DefaultLanguage
+
+
+#### Comment it out if UserTrack module is not loaded in the server
+#CookieName "woiqatty"
+#CookieTracking on
+
+# Tweak mime.types without actually editing it, or make certain files to be certain types.
+#AddType application/x-httpd-php3 .phtml
+AddType application/x-httpd-php3 .php
+AddType application/x-httpd-php3 .php3
+AddType application/x-httpd-php3-source .phps
+AddType application/x-tar .tgz
+
+# In this directory, default filetype is this one if Server cannot
+# otherwise determine from filename extensions.
+# Mostly text or HTML - "text/plain", gif images - "image/gif", 
+# compiled porgrams - "application/octet-stream"
+DefaultType text/plain
+# DefaultType image/gif
+# DefaultType  application/octet-stream
+
+################### THIS IS IMPORTANT! #####################
+# AddHandler allows you to map certain file extensions to "handlers",
+# actions unrelated to filetype. These can be either built into the server
+# or added with the Action command (see below).
+# If you want to use server side includes, or CGI outside
+# ScriptAliased directories, uncomment the following lines.
+
+# To use CGI scripts:
+AddHandler cgi-script cgi pl
+
+# To use server-parsed HTML files
+AddType text/html .shtml
+AddHandler server-parsed .shtml
+
+# Example of a file whose contents are sent as is so as to tell the client that a file has redirected. 
+# Status: 301 Now where did I leave that URL 
+# Location: http://xyz.abc.com/foo/bar.html 
+# Content-type: text/html 
+# 
+# <HTML> <HEAD> <TITLE> Lame excuses'R'us </TITLE></HEAD><BODY> 
+# <H1>Fred's exceptionally wonderful page has moved to 
+# <A HREF="http://xyz.abc.com/foo/bar.html">Joe's</A> site. 
+# </H1></BODY></HTML> 
+#
+# Server always adds a Date: and Server: header to the data returned to the client, 
+# so don't include these in the file.
+#AddHandler send-as-is asis
+
+# If you wish to use server-parsed imagemap files, use
+AddHandler imap-file map
+
+# For content negotiation use
+#AddHandler type-map var
+
+# Action lets you define media types that will execute a script whenever
+# a matching file is called. This eliminates the need for repeated URL
+# pathnames for oft-used CGI file processors.
+# Format: Action action-type cgi-script
+# Format: Action media/type /cgi-script/location
+# Format: Action handler-name /cgi-script/location
+#Action cgi-script /cgi-bin/default.cgi
+
+# Redirect [status] ABSOLUTE-path-of-old-url new-url.  Default status is temp.
+# Status is one of permanent (returns 301), temp (returns 302), 
+# seeother (returns 303, see other document in same place), 
+# gone (returns 410, no longer available at all) - Don't specify new-URL
+# Here, if the client requests http://myserver/service/foo.txt, it will be told 
+# to access http://foo2.bar.com/service/foo.txt instead. 
+#Redirect /service http://foo2.bar.com/service
+
+# Customizable error response.  Three styles:
+# 1. Plain Text - the (") marks it as text, it does not get output
+#ErrorDocument 500 "The server made a boo boo.
+# 2. Local Redirects - e.g. To redirect to local URL /missing.html
+#ErrorDocument 404 /missing.html
+#ErrorDocument 404 /cgi-bin/missing_handler.pl
+# 3. External Redirects (All env. variables don't go to the redirected location)
+#ErrorDocument 402 http://some.other_server.com/subscription_info.html
+
+
+# Mosaic/X 2.1+ browsers can uncompress information on the fly
+AddEncoding x-compress Z
+AddEncoding x-gzip gz tgz
+
+#Content negotiation directives
+#AddLanguage fr .fr
+# Just list the languages in decreasing order of preference.
+LanguagePriority en fr it
+
+######################################################################
+# If the web server's AllowOverride allows INDEXES to be overridden  #
+######################################################################
+# DirectoryIndex, ExpiresActive, ExpiresByType, ExpiresDefault
+# ImapBase, ImapDefault, ImapMenu
+# FancyIndexing, IndexOptions, IndexOrderDefault, IndexIgnore, HeaderName, ReadmeName
+# AddDescription, AddAlt, AddAltByEncoding, AddAltByType
+# AddIcon, AddIconByEncoding, AddIconByType, DefaultIcon
+
+# Default file to send to the client if none specified.  
+# Separate multiple entries with spaces.
+# If none of these files exists in a directory, a directory listing may
+# be returned depending on Options Indexes setting.
+DirectoryIndex index.html index.htm index.shtml index.php index.php3 index.pl index.cgi /cgi-bin/index.cgi
+
+# Must enable expirations to use other expire directives
+#ExpiresActive on
+# 'M' means that the file's last modification time should be used as the base time
+# 'A' means the client's access time should be used as base time
+#ExpiresDefault M604800
+# Expire GIF images after a month in the client's cache
+#ExpiresByType image/gif A2592000  
+# HTML documents are good for a week from the time they were changed, period     
+#ExpiresByType text/html M604800  
+#ExpiresByType text/html "access plus 1 month 15 days 2 hours" 
+#ExpiresDefault "modification plus 5 hours 3 minutes" 
+#ExpiresByType text/html "now plus 1 month 15 days 2 hours"
+
+# ImapMenu can be none, formatted, semiformatted, unformatted
+ImapMenu semiformatted
+# ImapDefault can be error, nocontent, map, referer, or some useful URL.
+#  The .map file overrides this.
+ImapDefault map
+# ImapBase can be map, referer, URL.  The .map file overrides this.
+ImapBase referer
+
+############## THIS HERE IS NOT TOO IMPORTANT! ###################
+# Apache version dependent.  If Options indexes is allowed, Server will behave as follows:
+#IndexOptions FancyIndexing FoldersFirst NameWidth=* DescriptionWidth=*
+#IndexOptions FancyIndexing NameWidth=*
+#IndexOptions +IconHeight=20 +IconWidth=20 +IconsAreLinks
+#IndexOptions +ScanHTMLTitles
+#IndexOptions +SuppressColumnSorting 
+#IndexOptions +SuppressDescription 
+#IndexOptions +SuppressLastModified 
+#IndexOptions +SuppressSize 
+#IndexOptions SuppressHTMLPreamble
+# Sort by Name, Date, Size, or Description? Default is name.
+#IndexOrderDefault Ascending Name
+# Don't list these files
+#IndexIgnore .??* *~ *# HEADER* README* RCS CVS *,v *,t
+
+# Server .conf should already have set these up.  You should only set
+# the missing ones in .htaccess files (if you ever find out)
+#AddIconByEncoding (CMP,/icons/compressed.gif) x-compress x-gzip
+#AddIconByType (TXT,/icons/text.gif) text/*
+#AddIconByType (IMG,/icons/image2.gif) image/*
+#AddIcon /icons/binary.gif .bin .exe
+#AddIcon /icons/text.gif .txt
+#AddIcon /icons/uuencoded.gif .uu
+#AddIcon /icons/hand.right.gif README
+#AddIcon /icons/folder.gif ^^DIRECTORY^^
+#AddIcon /icons/blank.gif ^^BLANKICON^^
+# If no file type matches..
+#DefaultIcon /icons/unknown.gif
+#AddDescription "GZIP compressed document" .gz
+AddDescription "Java class file" .class
+AddDescription "Java source file" .java
+AddDescription "Java Server Pages source file" .jsp
+# Server writes the contents of HeaderName file before the directory listing by adding .html or .txt to the specified name.
+# Server writes the contents of ReadmeName after the directory listing.
+# The server looks for the-specified-name.html, then the-specified-name.txt
+ReadmeName README
+HeaderName HEADER
+############## END OF NOT-TOO-IMPORTANT ###################
+
+
+######################################################################
+# If the web server's AllowOverride allows LIMIT to be overridden    #
+######################################################################
+# order, allow from, deny from, allow from env, deny from env
+
+# Controls which domain name or computer host client can get stuff from this server.  
+# No space between allow and deny in order (just comma).  allow from all is default
+#order allow,deny
+#deny from all
+#deny from www.yahoo.com
+#allow from www.yahoo.com
+# The allow from env directive controls access to a directory by the existence
+# (or non-existence) of an environment variable. Example: 
+# BrowserMatch ^KnockKnock/2.0 let_me_in
+# 
+#     order deny,allow
+#     deny from all
+#     allow from env=let_me_in
+# 
+
+
+######################################################################
+# If the web server's AllowOverride allows OPTIONS to be overridden  #
+######################################################################
+# Options, XBitHack, CheckSpelling, Example - in order of importance
+
+# Options:
+# ExecCGI - Execution of CGI scripts is permitted
+# FollowSymLinks - Server will follow symbolic links in this directory
+# SymLinksIfOwnerMatch - Server follows sym links if target file/dir owned by the same user id as the link
+# Includes - Server-side includes are permitted
+# IncludesNOEXEC - Server-side includes permitted, #exec and #include of CGI scripts are disabled
+# Indexes - Lists directory if no index file is found
+# MultiViews - Content negotiated MultiViews are allowed. 
+# Note that "MultiViews" must be named *explicitly* --- "Options All" doesn't give it to you.
+# This here resets any previous settings
+# Options IncludesNOEXEC MultiViews
+Options Includes MultiViews
+# Or, add/subtract from prior options
+#Options +Indexes -Includes
+# To disable execution of SSI and CGI in this directory
+#Options -Includes -IncludesNOEXEC -ExecCGI
+
+# Checks "user" execute permission on file.  If yes, executes it as SSI.
+# Then, no need for special file extension .shtml
+XBitHack on
+
+# Matches document(s) if maximum one spelling mistake
+# CheckSpelling  on
+
+#Example directive is Apache API related for Apache programmers
+
+
+######################################################################
+# The following do not depend on AllowOverride setting at all        #
+# These are either always available or need a loaded module          #
+######################################################################
+# Generally available:
+# Satisfy, ServerSignature, LimitRequestBody
+#  ... ,  ... 
+#  ... ,  ... 
+#  ... ,  ... 
+# ForceType, SetHandler, RemoveHandler, AddDefaultCharset
+# Optionally installed modules:
+# CookieName, Header
+
+# Satisfy any is used to password restrict an area, but to let clients from particular
+# addresses as defined in 'allow from' to get in without prompting for a password. Default is "all"
+#Satisfy any
+
+# Access control by file name in a directory where .htaccess file is placed:
+# The following lines prevent .htaccess files from being viewed by
+# Web clients.  Since .htaccess files often contain authorization
+# information, access is disallowed for security reasons.  Comment
+# these lines out if you want Web visitors to see the contents of
+# .htaccess files.  If you change the AccessFileName directive above,
+# be sure to make the corresponding changes here.
+
+    order allow,deny
+    deny from all
+
+
+# Can use reg exp  instead of line below.
+#
+#	order allow,deny
+#	allow from all
+#
+
+# Optionally add a line containing the server version and virtual host
+# name to server-generated pages (error documents, FTP directory listings,
+# mod_status and mod_info output etc., but not CGI generated documents).
+# Set to "EMail" to also include a mailto: link to the ServerAdmin.
+#ServerSignature On
+#ServerSignature EMail
+
+# Specify cookie name to be used if CookieTracking is set to on.  Needs mod_usertrack installed.
+# I specify this up in FileInfo overriding
+# CookieName "woiqatty"
+
+# To control denial-of-service attacks
+LimitRequestBody 3000000
+
+# For documents served through this directory, modify headers as follows:
+# Can also be set, add.  Mod_header not generally available.
+#Header append Author "V. Singla"   
+#Header unset Author
+
+################# For Apache Windows version only ######################
+
+# use this to specify whether Apache should search windows registry
+# or the #! line of the called script itself for interpreter name and location.
+#ScriptInterpreterSource script
+# Tries to match the called file's extension in registry (e.g. search registry for .pl or .cgi)
+#ScriptInterpreterSource registry
+
+
+############ END OF .htaccess FILE #############

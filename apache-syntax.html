@@ -1,0 +1,286 @@
+<html>
+<head>
+<title>Apache configuration file syntax</title>
+<meta name="Generator" content="Vim/6.3">
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+</head>
+<body bgcolor="#000000" text="#ffffff">
+<pre>
+<font color="#00ffff"><b>&quot; Vim syntax file</b></font>
+<font color="#00ffff"><b>&quot; This is a GENERATED FILE. Please always refer to source file at the URI below.</b></font>
+<font color="#00ffff"><b>&quot;</b></font> <font color="#8080ff"><b>Language:</b></font><font color="#00ffff"><b> Apache configuration (httpd.conf, srm.conf, access.conf, .htaccess)</b></font>
+<font color="#00ffff"><b>&quot;</b></font> <font color="#8080ff"><b>Maintainer:</b></font><font color="#00ffff"><b> David Ne\v{c}as (Yeti) &lt;yeti@physics.muni.cz&gt;</b></font>
+<font color="#00ffff"><b>&quot;</b></font> <font color="#8080ff"><b>Last Change:</b></font><font color="#00ffff"><b> 2002-10-15</b></font>
+<font color="#00ffff"><b>&quot;</b></font> <font color="#8080ff"><b>URL:</b></font><font color="#00ffff"><b> <A HREF="http://trific.ath.cx/Ftp/vim/syntax/apache.vim">http://trific.ath.cx/Ftp/vim/syntax/apache.vim</A></b></font>
+<font color="#00ffff"><b>&quot;</b></font> <font color="#8080ff"><b>Note:</b></font><font color="#00ffff"><b> define apache_version to your Apache version, e.g.</b></font><font color="#ff40ff"><b> &quot;1.3&quot;</b></font><font color="#00ffff"><b>,</b></font><font color="#ff40ff"><b> &quot;2&quot;</b></font><font color="#00ffff"><b>,</b></font><font color="#ff40ff"><b> &quot;2.0.39&quot;</b></font>
+
+<font color="#00ffff"><b>&quot; Setup</b></font>
+<font color="#ffff00"><b>if</b></font> <font color="#ffff00"><b>version</b></font> <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>600</b></font>
+        <font color="#ffff00"><b>if</b></font> <font color="#00ffff"><b>exists</b></font><font color="#ffff00"><b>(</b></font><font color="#ff40ff"><b>&quot;b:current_syntax&quot;</b></font><font color="#ffff00"><b>)</b></font>
+                <font color="#ffff00"><b>finish</b></font>
+        <font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>else</b></font>
+        <font color="#ffff00"><b>syntax</b></font> <font color="#00ff00"><b>clear</b></font>
+<font color="#ffff00"><b>endif</b></font>
+
+<font color="#ffff00"><b>if</b></font> <font color="#00ffff"><b>exists</b></font><font color="#ffff00"><b>(</b></font><font color="#ff40ff"><b>&quot;apache_version&quot;</b></font><font color="#ffff00"><b>)</b></font>
+        <font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> apache_version
+<font color="#ffff00"><b>else</b></font>
+        <font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> <font color="#ff40ff"><b>&quot;1.3&quot;</b></font>
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> <font color="#00ffff"><b>substitute</b></font><font color="#ffff00"><b>(</b></font>s:av, <font color="#ff40ff"><b>&quot;[^.0-9]&quot;</b></font>, <font color="#ff40ff"><b>&quot;&quot;</b></font>, <font color="#ff40ff"><b>&quot;g&quot;</b></font><font color="#ffff00"><b>)</b></font>
+<font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> <font color="#00ffff"><b>substitute</b></font><font color="#ffff00"><b>(</b></font>s:av, <font color="#ff40ff"><b>&quot;^</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>d</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>+$&quot;</b></font>, <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>0.999&quot;</b></font>, <font color="#ff40ff"><b>&quot;&quot;</b></font><font color="#ffff00"><b>)</b></font>
+<font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> <font color="#00ffff"><b>substitute</b></font><font color="#ffff00"><b>(</b></font>s:av, <font color="#ff40ff"><b>&quot;^</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>d</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>+</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>.</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>d</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>+$&quot;</b></font>, <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>0.999&quot;</b></font>, <font color="#ff40ff"><b>&quot;&quot;</b></font><font color="#ffff00"><b>)</b></font>
+<font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> <font color="#00ffff"><b>substitute</b></font><font color="#ffff00"><b>(</b></font>s:av, <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>&lt;</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>d</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>&gt;&quot;</b></font>, <font color="#ff40ff"><b>&quot;0</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>0&quot;</b></font>, <font color="#ff40ff"><b>&quot;g&quot;</b></font><font color="#ffff00"><b>)</b></font>
+<font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> <font color="#00ffff"><b>substitute</b></font><font color="#ffff00"><b>(</b></font>s:av, <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>&lt;</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>d</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>d</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>&gt;&quot;</b></font>, <font color="#ff40ff"><b>&quot;0</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>0&quot;</b></font>, <font color="#ff40ff"><b>&quot;g&quot;</b></font><font color="#ffff00"><b>)</b></font>
+<font color="#ffff00"><b>let</b></font> s:av <font color="#ffff00"><b>=</b></font> <font color="#00ffff"><b>substitute</b></font><font color="#ffff00"><b>(</b></font>s:av, <font color="#ff40ff"><b>&quot;[.]&quot;</b></font>, <font color="#ff40ff"><b>&quot;&quot;</b></font>, <font color="#ff40ff"><b>&quot;g&quot;</b></font><font color="#ffff00"><b>)</b></font>
+
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>case</b></font> <font color="#00ff00"><b>ignore</b></font>
+
+<font color="#00ffff"><b>&quot; Base constructs</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheComment <font color="#ff40ff"><b>&quot;^\s*#.*$&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheFixme
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheUserID <font color="#ff40ff"><b>&quot;#-\?\d\+\&gt;&quot;</b></font>
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>case</b></font> <font color="#00ff00"><b>match</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheFixme FIXME TODO XXX NOT
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>case</b></font> <font color="#00ff00"><b>ignore</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheAnything <font color="#ff40ff"><b>&quot;\s</b></font><font color="#ff40ff"><b>[^&gt;]</b></font><font color="#ff40ff"><b>*&quot;</b></font> <font color="#ff6060"><b>contained</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheError <font color="#ff40ff"><b>&quot;\w\+&quot;</b></font> <font color="#ff6060"><b>contained</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>region</b></font> apacheString <font color="#00ff00"><b>start</b></font>=<font color="#ff40ff"><b>+&quot;+</b></font> <font color="#00ff00"><b>end</b></font>=<font color="#ff40ff"><b>+&quot;+</b></font> <font color="#00ff00"><b>skip</b></font>=<font color="#ff40ff"><b>+</b></font><font color="#ff40ff"><b>\\\\</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>\\</b></font><font color="#ff40ff"><b>\&quot;+</b></font>
+
+<font color="#00ffff"><b>&quot; Core and mpm</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AccessFileName AddDefaultCharset AllowOverride AuthName AuthType ContentDigest DefaultType DocumentRoot ErrorDocument ErrorLog HostNameLookups IdentityCheck Include KeepAlive KeepAliveTimeout LimitRequestBody LimitRequestFields LimitRequestFieldsize LimitRequestLine LogLevel MaxKeepAliveRequests NameVirtualHost Options Require RLimitCPU RLimitMEM RLimitNPROC Satisfy ScriptInterpreterSource ServerAdmin ServerAlias ServerName ServerPath ServerRoot ServerSignature ServerTokens TimeOut UseCanonicalName
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AccessConfig AddModule BindAddress BS2000Account ClearModuleList CoreDumpDirectory Group Listen ListenBacklog LockFile MaxClients MaxRequestsPerChild MaxSpareServers MinSpareServers PidFile Port ResourceConfig ScoreBoardFile SendBufferSize ServerType StartServers ThreadsPerChild ThreadStackSize User
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AcceptPathInfo CGIMapExtension EnableMMAP FileETag ForceType LimitXMLRequestBody SetHandler SetInputFilter SetOutputFilter
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption INode MTime Size
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption Any All On Off Double EMail DNS Min Minimal OS Prod ProductOnly Full
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption emerg alert crit error warn notice info debug
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption registry script inetd standalone
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheOptionOption <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>[+-]</b></font><font color="#ff40ff"><b>\?\&lt;</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>ExecCGI</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>FollowSymLinks</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>Includes</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>IncludesNoExec</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>Indexes</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>MultiViews</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>SymLinksIfOwnerMatch</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>\&gt;&quot;</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption user group valid-user
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>case</b></font> <font color="#00ff00"><b>match</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheMethodOption GET POST PUT DELETE CONNECT OPTIONS TRACE PATCH PROPFIND PROPPATCH MKCOL COPY MOVE LOCK UNLOCK <font color="#ff6060"><b>contained</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>case</b></font> <font color="#00ff00"><b>ignore</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheSection <font color="#ff40ff"><b>&quot;&lt;\/\=</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>Directory</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>DirectoryMatch</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>Files</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>FilesMatch</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>IfModule</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>IfDefine</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>Location</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>LocationMatch</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>VirtualHost</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>\+.*&gt;&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheAnything
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheLimitSection <font color="#ff40ff"><b>&quot;&lt;\/\=</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>Limit</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>LimitExcept</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>\+.*&gt;&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheLimitSectionKeyword,apacheMethodOption,apacheError
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheLimitSectionKeyword Limit LimitExcept <font color="#ff6060"><b>contained</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheAuthType <font color="#ff40ff"><b>&quot;AuthType\s.*$&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheAuthTypeValue
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheAuthTypeValue Basic Digest
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheAllowOverride <font color="#ff40ff"><b>&quot;AllowOverride\s.*$&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheAllowOverrideValue,apacheComment
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheAllowOverrideValue AuthConfig FileInfo Indexes Limit Options <font color="#ff6060"><b>contained</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CoreDumpDirectory Group Listen ListenBacklog LockFile MaxClients MaxMemFree MaxRequestsPerChild MaxSpareThreads MaxSpareThreadsPerChild MinSpareThreads NumServers PidFile ScoreBoardFile SendBufferSize ServerLimit StartServers StartThreads ThreadLimit ThreadsPerChild User
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration MaxThreads ThreadStackSize
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AssignUserId ChildPerUserId
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AcceptMutex MaxSpareServers MinSpareServers
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption flock fcntl sysvsem pthread
+<font color="#ffff00"><b>endif</b></font>
+
+<font color="#00ffff"><b>&quot; Modules</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheAllowDeny <font color="#ff40ff"><b>&quot;Allow\s\+from.*$&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheAllowDenyValue,apacheComment
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheAllowDeny <font color="#ff40ff"><b>&quot;Deny\s\+from.*$&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheAllowDenyValue,apacheComment
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheAllowDenyValue All None <font color="#ff6060"><b>contained</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheOrder <font color="#ff40ff"><b>&quot;^\s*Order\s.*$&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheOrderValue,apacheComment
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOrderValue Deny Allow <font color="#ff6060"><b>contained</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration Action Script
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration Alias AliasMatch Redirect RedirectMatch RedirectTemp RedirectPermanent ScriptAlias ScriptAliasMatch
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption permanent temp seeother gone
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AuthAuthoritative AuthGroupFile AuthUserFile
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration Anonymous Anonymous_Authoritative Anonymous_LogEmail Anonymous_MustGiveEmail Anonymous_NoUserID Anonymous_VerifyEmail
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AuthDBGroupFile AuthDBUserFile AuthDBAuthoritative
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AuthDBMGroupFile AuthDBMUserFile AuthDBMAuthoritative
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AuthDBMType
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption default SDBM GDBM NDBM DB
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AuthDigestAlgorithm AuthDigestDomain AuthDigestFile AuthDigestGroupFile AuthDigestNcCheck AuthDigestNonceFormat AuthDigestNonceLifetime AuthDigestQop
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption none auth auth-int MD5 MD5-sess
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AuthLDAPAuthoritative AuthLDAPBindON AuthLDAPBindPassword AuthLDAPCompareDNOnServer AuthLDAPDereferenceAliases AuthLDAPEnabled AuthLDAPFrontPageHack AuthLDAPGroupAttribute AuthLDAPGroupAttributeIsDN AuthLDAPRemoteUserIsDN AuthLDAPStartTLS AuthLDAPUrl
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption always never searching finding
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration FancyIndexing
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AddAlt AddAltByEncoding AddAltByType AddDescription AddIcon AddIconByEncoding AddIconByType DefaultIcon HeaderName IndexIgnore IndexOptions IndexOrderDefault ReadmeName
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption DescriptionWidth FancyIndexing FoldersFirst IconHeight IconsAreLinks IconWidth NameWidth ScanHTMLTitles SuppressColumnSorting SuppressDescription SuppressHTMLPreamble SuppressLastModified SuppressSize TrackModified
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption Ascending Descending Name Date Size Description
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption HTMLTable SupressIcon SupressRules VersionSort
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration BrowserMatch BrowserMatchNoCase
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CacheDefaultExpire CacheEnable CacheForceCompletion CacheIgnoreCacheControl CacheIgnoreNoLastMod CacheLastModifiedFactor CacheMaxExpire CacheMaxStreamingBuffer
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration MetaFiles MetaDir MetaSuffix
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ScriptLog ScriptLogLength ScriptLogBuffer
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ScriptStock
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CharsetDefault CharsetOptions CharsetSourceEnc
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption DebugLevel ImplicitAdd NoImplicitAdd
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration Dav DavDepthInfinity DavLockDB DavMinTimeout
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration Define
+<font color="#ffff00"><b>end</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration DeflateBufferSize DeflateFilterNote DeflateMemLevel DeflateWindowSize
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AuthDigestFile
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration DirectoryIndex
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ProtocolEcho
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PassEnv SetEnv UnsetEnv
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration Example
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ExpiresActive ExpiresByType ExpiresDefault
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ExtFilterDefine ExtFilterOptions
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption PreservesContentLength DebugLevel LogStderr NoLogStderr
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CacheFile MMapFile
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration Header
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration RequestHeader
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption set unset append add
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ImapMenu ImapDefault ImapBase
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption none formatted semiformatted unformatted
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption nocontent referer error map
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration XBitHack
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration SSIEndTag SSIErrorMsg SSIStartTag SSITimeFormat SSIUndefinedEcho
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption on off full
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AddModuleInfo
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ISAPIReadAheadBuffer ISAPILogNotSupported ISAPIAppendLogToErrors ISAPIAppendLogToQuery
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ISAPICacheFile ISAIPFakeAsync
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration LDAPCacheEntries LDAPCacheTTL LDAPCertDBPath LDAPOpCacheEntries LDAPOpCacheTTL LDAPSharedCacheSize
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AgentLog
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CookieLog CustomLog LogFormat TransferLog
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration RefererIgnore RefererLog
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AddCharset AddEncoding AddHandler AddLanguage AddType DefaultLanguage RemoveEncoding RemoveHandler RemoveType TypesConfig
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ForceType SetHandler
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AddInputFilter AddOutputFilter ModMimeUsePathInfo MultiviewsMatch RemoveInputFilter RemoveOutputFilter
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration MimeMagicFile
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration MMapFile
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CacheNegotiatedDocs LanguagePriority
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ForceLanguagePriority
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlModule PerlRequire PerlTaintCheck PerlWarn
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlSetVar PerlSetEnv PerlPassEnv PerlSetupEnv
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlInitHandler PerlPostReadRequestHandler PerlHeaderParserHandler
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlTransHandler PerlAccessHandler PerlAuthenHandler PerlAuthzHandler
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlTypeHandler PerlFixupHandler PerlHandler PerlLogHandler
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlCleanupHandler PerlChildInitHandler PerlChildExitHandler
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlRestartHandler PerlDispatchHandler
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration PerlFreshRestart PerlSendHeader
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration php_value php_flag php_admin_value php_admin_flag
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration AllowCONNECT NoProxy ProxyBlock ProxyDomain ProxyPass ProxyPassReverse ProxyReceiveBufferSize ProxyRemote ProxyRequests ProxyVia
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CacheRoot CacheSize CacheMaxExpire CacheDefaultExpire CacheLastModifiedFactor CacheGcInterval CacheDirLevels CacheDirLength CacheForceCompletion NoCache
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption block
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheSection <font color="#ff40ff"><b>&quot;&lt;\/\=</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>Proxy</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>ProxyMatch</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>\+.*&gt;&quot;</b></font> <font color="#ff6060"><b>contains=</b></font>apacheAnything
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ProxyErrorOverride ProxyIOBufferSize ProxyMaxForwards ProxyPreserveHost ProxyRemoteMatch ProxyTimeout
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration RewriteEngine RewriteOptions RewriteLog RewriteLogLevel RewriteLock RewriteMap RewriteBase RewriteCond RewriteRule
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption inherit
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration RoamingAlias
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration BrowserMatch BrowserMatchNoCase SetEnvIf SetEnvIfNoCase
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration LoadFile LoadModule
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CheckSpelling
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration SSLCACertificateFile SSLCACertificatePath SSLCARevocationFile SSLCARevocationPath SSLCertificateChainFile SSLCertificateFile SSLCertificateKeyFile SSLCipherSuite SSLEngine SSLMutex SSLOptions SSLPassPhraseDialog SSLProtocol SSLRandomSeed SSLRequire SSLRequireSSL SSLSessionCache SSLSessionCacheTimeout SSLVerifyClient SSLVerifyDepth
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration SSLLog SSLLogLevel
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration SSLProxyCACertificateFile SSLProxyCACertificatePath SSLProxyCARevocationFile SSLProxyCARevocationPath SSLProxyCipherSuite SSLProxyEngine SSLProxyMachineCertificateFile SSLProxyMachineCertificatePath SSLProxyProtocol SSLProxyVerify SSLProxyVerifyDepth
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheOption <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>[+-]</b></font><font color="#ff40ff"><b>\?\&lt;</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>StdEnvVars</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>CompatEnvVars</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>ExportCertData</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>FakeBasicAuth</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>StrictRequire</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>OptRenegotiate</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>\&gt;&quot;</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption builtin sem
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheOption <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>file</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>exec</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>egd</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>dbm</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>shm</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>:&quot;</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheOption <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>[+-]</b></font><font color="#ff40ff"><b>\?\&lt;</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>SSLv2</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>SSLv3</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>TLSv1</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>\&gt;&quot;</b></font>
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>match</b></font> apacheOption <font color="#ff40ff"><b>&quot;</b></font><font color="#ff40ff"><b>[+-]</b></font><font color="#ff40ff"><b>\?\&lt;</b></font><font color="#ff6060"><b>\(</b></font><font color="#ff40ff"><b>SSLv2</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>SSLv3</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>TLSv1</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>kRSA</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>kHDr</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>kDHd</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>kEDH</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>aNULL</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>aRSA</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>aDSS</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>aRH</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>eNULL</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>DES</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>3DES</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>RC2</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>RC4</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>IDEA</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>MD5</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>SHA1</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>SHA</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>EXP</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>EXPORT40</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>EXPORT56</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>LOW</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>MEDIUM</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>HIGH</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>RSA</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>DH</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>EDH</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>ADH</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>DSS</b></font><font color="#ff6060"><b>\|</b></font><font color="#ff40ff"><b>NULL</b></font><font color="#ff6060"><b>\)</b></font><font color="#ff40ff"><b>\&gt;&quot;</b></font>
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption optional require optional_no_ca
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration ExtendedStatus
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration SuexecUserGroup
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration UserDir
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CookieExpires CookieName CookieTracking
+<font color="#ffff00"><b>if</b></font> s:av <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>&quot;002000000&quot;</b></font>
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration CookieDomain CookieStyle
+        <font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheOption Netscape Cookie Cookie2 RFC2109 RFC2965
+<font color="#ffff00"><b>endif</b></font>
+<font color="#ffff00"><b>syn</b></font> <font color="#00ff00"><b>keyword</b></font> apacheDeclaration VirtualDocumentRoot VirtualDocumentRootIP VirtualScriptAlias VirtualScriptAliasIP
+
+<font color="#00ffff"><b>&quot; Define the default highlighting</b></font>
+<font color="#ffff00"><b>if</b></font> <font color="#ffff00"><b>version</b></font> <font color="#ffff00"><b>&gt;=</b></font> <font color="#ff40ff"><b>508</b></font> <font color="#ffff00"><b>||</b></font> !<font color="#00ffff"><b>exists</b></font><font color="#ffff00"><b>(</b></font><font color="#ff40ff"><b>&quot;did_apache_syntax_inits&quot;</b></font><font color="#ffff00"><b>)</b></font>
+        <font color="#ffff00"><b>if</b></font> <font color="#ffff00"><b>version</b></font> <font color="#ffff00"><b>&lt;</b></font> <font color="#ff40ff"><b>508</b></font>
+                <font color="#ffff00"><b>let</b></font> did_apache_syntax_inits <font color="#ffff00"><b>=</b></font> <font color="#ff40ff"><b>1</b></font>
+                <font color="#ffff00"><b>command</b></font> <font color="#ffff00"><b>-</b></font><font color="#8080ff"><b>nargs</b></font><font color="#ffff00"><b>=+</b></font> HiLink <font color="#ffff00"><b>hi</b></font> <font color="#ffff00"><b>link</b></font> <font color="#ff6060"><b>&lt;</b></font><font color="#ff6060"><b>args</b></font><font color="#ff6060"><b>&gt;</b></font>
+        <font color="#ffff00"><b>else</b></font>
+                <font color="#ffff00"><b>command</b></font> <font color="#ffff00"><b>-</b></font><font color="#8080ff"><b>nargs</b></font><font color="#ffff00"><b>=+</b></font> HiLink <font color="#ffff00"><b>hi</b></font> <font color="#ffff00"><b>def link</b></font> <font color="#ff6060"><b>&lt;</b></font><font color="#ff6060"><b>args</b></font><font color="#ff6060"><b>&gt;</b></font>
+        <font color="#ffff00"><b>endif</b></font>
+
+        HiLink apacheAllowOverride apacheDeclaration
+        HiLink apacheAllowOverrideValue apacheOption
+        HiLink apacheAuthType apacheDeclaration
+        HiLink apacheAuthTypeValue apacheOption
+        HiLink apacheOptionOption apacheOption
+        HiLink apacheDeclaration Function
+        HiLink apacheAnything apacheOption
+        HiLink apacheOption Number
+        HiLink apacheComment Comment
+        HiLink apacheFixme Todo
+        HiLink apacheLimitSectionKeyword apacheLimitSection
+        HiLink apacheLimitSection apacheSection
+        HiLink apacheSection Label
+        HiLink apacheMethodOption Type
+        HiLink apacheAllowDeny Include
+        HiLink apacheAllowDenyValue Identifier
+        HiLink apacheOrder Special
+        HiLink apacheOrderValue String
+        HiLink apacheString String
+        HiLink apacheError Error
+        HiLink apacheUserID Number
+
+        <font color="#ffff00"><b>delcommand</b></font> HiLink
+<font color="#ffff00"><b>endif</b></font>
+
+<font color="#ffff00"><b>let</b></font> b:current_syntax <font color="#ffff00"><b>=</b></font> <font color="#ff40ff"><b>&quot;apache&quot;</b></font>
+</pre>
+</body>
+</html>

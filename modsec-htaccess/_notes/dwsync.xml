@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<dwsync>
+<file name="00_asl_rbl.conf" server="localhost//home/askapach/" local="128863598250000000" remote="129137726020000000" />
+<file name="00_asl_whitelist.conf" server="localhost//home/askapach/" local="128863598260000000" remote="129137726030000000" />
+<file name="05_asl_exclude.conf" server="localhost//home/askapach/" local="128863598270000000" remote="129137726030000000" />
+<file name="05_asl_scanner.conf" server="localhost//home/askapach/" local="128863598270000000" remote="129137726030000000" />
+<file name="10_asl_antimalware.conf" server="localhost//home/askapach/" local="128863598280000000" remote="129137726030000000" />
+<file name="10_asl_rules.conf" server="localhost//home/askapach/" local="128863598300000000" remote="129137726030000000" />
+<file name="20_asl_useragents.conf" server="localhost//home/askapach/" local="128863598310000000" remote="129137726040000000" />
+<file name="30_asl_antimalware.conf" server="localhost//home/askapach/" local="128863598310000000" remote="129137726040000000" />
+<file name="30_asl_antispam.conf" server="localhost//home/askapach/" local="128863598320000000" remote="129137726040000000" />
+<file name="40_asl_apache2-rules.conf" server="localhost//home/askapach/" local="128863598330000000" remote="129137726040000000" />
+<file name="50_asl_rootkits.conf" server="localhost//home/askapach/" local="128863598340000000" remote="129137726040000000" />
+<file name="60_asl_recons.conf" server="localhost//home/askapach/" local="128863598350000000" remote="129137726040000000" />
+<file name="99_asl_jitp.conf" server="localhost//home/askapach/" local="128863598650000000" remote="129137726060000000" />
+<file name="apache2-rules-htaccess.conf" server="localhost//home/askapach/" local="128863598350000000" remote="129137726070000000" />
+<file name="badips-htaccess.conf" server="localhost//home/askapach/" local="128863598680000000" remote="129137726090000000" />
+<file name="blacklist.conf" server="localhost//home/askapach/" local="128863599040000000" remote="129137726110000000" />
+<file name="blacklist2.conf" server="localhost//home/askapach/" local="128863598710000000" remote="129137726110000000" />
+<file name="domain-spam-whitelist.conf" server="localhost//home/askapach/" local="128863598710000000" remote="129137726110000000" />
+<file name="exclude.conf" server="localhost//home/askapach/" local="128863598720000000" remote="129137726110000000" />
+<file name="jitp.conf" server="localhost//home/askapach/" local="128863598970000000" remote="129137726130000000" />
+<file name="proxy.conf" server="localhost//home/askapach/" local="128863598980000000" remote="129137726130000000" />
+<file name="recons.conf" server="localhost//home/askapach/" local="128863598980000000" remote="129137726130000000" />
+<file name="rootkits.conf" server="localhost//home/askapach/" local="128863598990000000" remote="129137726130000000" />
+<file name="rules.conf" server="localhost//home/askapach/" local="128863599010000000" remote="129137726140000000" />
+<file name="useragents.conf" server="localhost//home/askapach/" local="128863599020000000" remote="129137726140000000" />
+</dwsync>

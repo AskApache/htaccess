@@ -1,0 +1,52 @@
+Options +Indexes -MultiViews -ExecCGI
+
+##############################################
+#       HEADERS and CACHING              #
+##############################################
+Header unset Pragma
+FileETag None
+Header unset ETag
+SetEnv nokeepalive
+
+# 1 YEAR
+<FilesMatch "\.(ico|pdf|flv|jpg|jpeg|png|gif|swf|mp3|mp4)$">
+Header set Cache-Control "public"
+Header set Expires "Thu, 15 Apr 2010 20:00:00 GMT"
+Header unset Last-Modified
+</FilesMatch>
+
+# 2 HOURS
+<FilesMatch "\.(html|htm|xml|txt|xsl)$">
+Header set Cache-Control "max-age=7200, must-revalidate"
+</FilesMatch>
+
+
+### COMPRESSION
+<FilesMatch "\.(js|css)$">
+SetEnv !nokeepalive
+SetOutputFilter DEFLATE
+Header set Cache-Control "public"
+Header set Expires "Thu, 15 Apr 2010 20:00:00 GMT"
+Header unset Last-Modified
+</FilesMatch>
+
+<Files apachenew.css>
+Header set Cache-Control "must-revalidate"
+Header unset Expires
+Header unset Expires
+</Files>
+
+
+RewriteEngine On
+RewriteBase /
+
+RewriteCond %{ENV:REDIRECT_STATUS} =200
+RewriteRule .* - [L,NC]
+
+#RewriteCond %{REMOTE_ADDR} =24.122.215.60
+#RewriteCond %{THE_REQUEST} ^(GET|HEAD)\ /z/c/apache-([0-9]+)\.css.*\ HTTP/ [NC]
+#RewriteRule .+ /z/c/apachenew.css [L,S=1]
+
+RewriteCond %{THE_REQUEST} ^(GET|HEAD)\ /z/([cj]+)/(.+)-([0-9]+)\.(js|css).*\ HTTP/ [NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule .+ /z/%2/%3.%5 [NC,L]

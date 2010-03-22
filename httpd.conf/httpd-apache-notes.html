@@ -1,0 +1,1542 @@
+<html>
+<head>
+<title>AskApache httpd Source Code notes</title>
+<meta name="Generator" content="Vim/6.3">
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+</head>
+<body bgcolor="#000000" text="#ffffff">
+<pre>
+request_rec
+    ap_regmatch_t regmatch[AP_MAX_REG_MATCH];
+    apr_array_header_t *rewriteconds;
+    rewritecond_entry *conds;
+    <font color="#00ff00"><b>int</b></font> i, rc;
+    <font color="#00ff00"><b>char</b></font> *newuri = <font color="#ff40ff"><b>NULL</b></font>;
+    request_rec *r = ctx-&gt;r;
+    <font color="#00ff00"><b>int</b></font> is_proxyreq = <font color="#ff40ff"><b>0</b></font>;
+
+
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Information to which an extension can be mapped</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ff00"><b>typedef</b></font> <font color="#00ff00"><b>struct</b></font> extension_info {
+    <font color="#00ff00"><b>char</b></font> *forced_type;                <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Additional AddTyped stuff </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#00ff00"><b>char</b></font> *encoding_type;              <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Added with AddEncoding... </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#00ff00"><b>char</b></font> *language_type;              <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Added with AddLanguage... </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#00ff00"><b>char</b></font> *handler;                    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Added with AddHandler... </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#00ff00"><b>char</b></font> *charset_type;               <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Added with AddCharset... </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#00ff00"><b>char</b></font> *input_filters;              <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Added with AddInputFilter... </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#00ff00"><b>char</b></font> *output_filters;             <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Added with AddOutputFilter... </b></font><font color="#00ffff"><b>*/</b></font>
+
+
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>const</b></font> command_rec mime_cmds[] =
+{
+    AP_INIT_ITERATE2(<font color="#ff40ff"><b>&quot;AddCharset&quot;</b></font>, add_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, charset_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;a charset (e.g., iso-2022-jp), followed by one or more &quot;</b></font>
+        <font color="#ff40ff"><b>&quot;file extensions&quot;</b></font>),
+    AP_INIT_ITERATE2(<font color="#ff40ff"><b>&quot;AddEncoding&quot;</b></font>, add_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, encoding_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;an encoding (e.g., gzip), followed by one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE2(<font color="#ff40ff"><b>&quot;AddHandler&quot;</b></font>, add_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, handler), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;a handler name followed by one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE2(<font color="#ff40ff"><b>&quot;AddInputFilter&quot;</b></font>, add_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, input_filters), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;input filter name (or ; delimited names) followed by one or &quot;</b></font>
+        <font color="#ff40ff"><b>&quot;more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE2(<font color="#ff40ff"><b>&quot;AddLanguage&quot;</b></font>, add_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, language_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;a language (e.g., fr), followed by one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE2(<font color="#ff40ff"><b>&quot;AddOutputFilter&quot;</b></font>, add_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, output_filters), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;output filter name (or ; delimited names) followed by one or &quot;</b></font>
+        <font color="#ff40ff"><b>&quot;more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE2(<font color="#ff40ff"><b>&quot;AddType&quot;</b></font>, add_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, forced_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;a mime type followed by one or more file extensions&quot;</b></font>),
+    AP_INIT_TAKE1(<font color="#ff40ff"><b>&quot;DefaultLanguage&quot;</b></font>, ap_set_string_slot,
+        (<font color="#00ff00"><b>void</b></font>*)APR_OFFSETOF(mime_dir_config, default_language), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;language to use for documents with no other language file extension&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;MultiviewsMatch&quot;</b></font>, multiviews_match, <font color="#ff40ff"><b>NULL</b></font>, OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;NegotiatedOnly (default), Handlers and/or Filters, or Any&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;RemoveCharset&quot;</b></font>, remove_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, charset_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;RemoveEncoding&quot;</b></font>, remove_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, encoding_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;RemoveHandler&quot;</b></font>, remove_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, handler), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;RemoveInputFilter&quot;</b></font>, remove_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, input_filters), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;RemoveLanguage&quot;</b></font>, remove_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, language_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;RemoveOutputFilter&quot;</b></font>, remove_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, output_filters), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;one or more file extensions&quot;</b></font>),
+    AP_INIT_ITERATE(<font color="#ff40ff"><b>&quot;RemoveType&quot;</b></font>, remove_extension_info,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(extension_info, forced_type), OR_FILEINFO,
+        <font color="#ff40ff"><b>&quot;one or more file extensions&quot;</b></font>),
+    AP_INIT_TAKE1(<font color="#ff40ff"><b>&quot;TypesConfig&quot;</b></font>, set_types_config, <font color="#ff40ff"><b>NULL</b></font>, RSRC_CONF,
+        <font color="#ff40ff"><b>&quot;the MIME types config file&quot;</b></font>),
+    AP_INIT_FLAG(<font color="#ff40ff"><b>&quot;ModMimeUsePathInfo&quot;</b></font>, ap_set_flag_slot,
+        (<font color="#00ff00"><b>void</b></font> *)APR_OFFSETOF(mime_dir_config, use_path_info), ACCESS_CONF,
+        <font color="#ff40ff"><b>&quot;Set to 'yes' to allow mod_mime to use path info for type checking&quot;</b></font>),
+    {<font color="#ff40ff"><b>NULL</b></font>}
+};
+
+
+
+   <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>*</b></font>
+<font color="#00ffff"><b>     *  'allowed' is a bitvector of the allowed methods.</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     *  A handler must ensure that the request method is one that</b></font>
+<font color="#00ffff"><b>     *  it is capable of handling.  Generally modules should DECLINE</b></font>
+<font color="#00ffff"><b>     *  any request methods they do not handle.  Prior to aborting the</b></font>
+<font color="#00ffff"><b>     *  handler like this the handler should set r-&gt;allowed to the list</b></font>
+<font color="#00ffff"><b>     *  of methods that it is willing to handle.  This bitvector is used</b></font>
+<font color="#00ffff"><b>     *  to construct the &quot;Allow:&quot; header required for OPTIONS requests,</b></font>
+<font color="#00ffff"><b>     *  and HTTP_METHOD_NOT_ALLOWED and HTTP_NOT_IMPLEMENTED status codes.</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     *  Since the default_handler deals with OPTIONS, all modules can</b></font>
+<font color="#00ffff"><b>     *  usually decline to deal with OPTIONS.  TRACE is always allowed,</b></font>
+<font color="#00ffff"><b>     *  modules don't need to set it explicitly.</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     *  Since the default_handler will always handle a GET, a</b></font>
+<font color="#00ffff"><b>     *  module which does *not* implement GET should probably return</b></font>
+<font color="#00ffff"><b>     *  HTTP_METHOD_NOT_ALLOWED.  Unfortunately this means that a Script GET</b></font>
+<font color="#00ffff"><b>     *  handler can't be installed by mod_actions.</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>*</b></font>
+<font color="#00ffff"><b> * @defgroup Methods List of Methods recognized by the server</b></font>
+<font color="#00ffff"><b> * @ingroup APACHE_CORE_DAEMON</b></font>
+<font color="#00ffff"><b> * @{</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * @brief Methods recognized (but not necessarily handled) by the server.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * These constants are used in bit shifting masks of size int, so it is</b></font>
+<font color="#00ffff"><b> * unsafe to have more methods than bits in an int.  HEAD == M_GET.</b></font>
+<font color="#00ffff"><b> * This list must be tracked by the list in http_protocol.c in routine</b></font>
+<font color="#00ffff"><b> * ap_method_name_of().</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+
+<font color="#8080ff"><b>#define M_GET                   </b></font><font color="#ff40ff"><b>0</b></font><font color="#8080ff"><b>       </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* RFC 2616: HTTP </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_PUT                   </b></font><font color="#ff40ff"><b>1</b></font><font color="#8080ff"><b>       </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>  :             </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_POST                  </b></font><font color="#ff40ff"><b>2</b></font>
+<font color="#8080ff"><b>#define M_DELETE                </b></font><font color="#ff40ff"><b>3</b></font>
+<font color="#8080ff"><b>#define M_CONNECT               </b></font><font color="#ff40ff"><b>4</b></font>
+<font color="#8080ff"><b>#define M_OPTIONS               </b></font><font color="#ff40ff"><b>5</b></font>
+<font color="#8080ff"><b>#define M_TRACE                 </b></font><font color="#ff40ff"><b>6</b></font><font color="#8080ff"><b>       </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* RFC 2616: HTTP </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_PATCH                 </b></font><font color="#ff40ff"><b>7</b></font><font color="#8080ff"><b>       </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* no rfc(!)  ### remove this one? </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_PROPFIND              </b></font><font color="#ff40ff"><b>8</b></font><font color="#8080ff"><b>       </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* RFC 2518: WebDAV </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_PROPPATCH             </b></font><font color="#ff40ff"><b>9</b></font><font color="#8080ff"><b>       </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>  :               </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_MKCOL                 </b></font><font color="#ff40ff"><b>10</b></font>
+<font color="#8080ff"><b>#define M_COPY                  </b></font><font color="#ff40ff"><b>11</b></font>
+<font color="#8080ff"><b>#define M_MOVE                  </b></font><font color="#ff40ff"><b>12</b></font>
+<font color="#8080ff"><b>#define M_LOCK                  </b></font><font color="#ff40ff"><b>13</b></font>
+<font color="#8080ff"><b>#define M_UNLOCK                </b></font><font color="#ff40ff"><b>14</b></font><font color="#8080ff"><b>      </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* RFC 2518: WebDAV </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_VERSION_CONTROL       </b></font><font color="#ff40ff"><b>15</b></font><font color="#8080ff"><b>      </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* RFC 3253: WebDAV Versioning </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_CHECKOUT              </b></font><font color="#ff40ff"><b>16</b></font><font color="#8080ff"><b>      </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>  :                          </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define M_UNCHECKOUT            </b></font><font color="#ff40ff"><b>17</b></font>
+<font color="#8080ff"><b>#define M_CHECKIN               </b></font><font color="#ff40ff"><b>18</b></font>
+<font color="#8080ff"><b>#define M_UPDATE                </b></font><font color="#ff40ff"><b>19</b></font>
+<font color="#8080ff"><b>#define M_LABEL                 </b></font><font color="#ff40ff"><b>20</b></font>
+<font color="#8080ff"><b>#define M_REPORT                </b></font><font color="#ff40ff"><b>21</b></font>
+<font color="#8080ff"><b>#define M_MKWORKSPACE           </b></font><font color="#ff40ff"><b>22</b></font>
+<font color="#8080ff"><b>#define M_MKACTIVITY            </b></font><font color="#ff40ff"><b>23</b></font>
+<font color="#8080ff"><b>#define M_BASELINE_CONTROL      </b></font><font color="#ff40ff"><b>24</b></font>
+<font color="#8080ff"><b>#define M_MERGE                 </b></font><font color="#ff40ff"><b>25</b></font>
+<font color="#8080ff"><b>#define M_INVALID               </b></font><font color="#ff40ff"><b>26</b></font><font color="#8080ff"><b>      </b></font><font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* RFC 3253: WebDAV Versioning </b></font><font color="#00ffff"><b>*/</b></font>
+
+
+
+
+{
+    methods_registry = apr_hash_make(p);
+    apr_pool_cleanup_register(p, <font color="#ff40ff"><b>NULL</b></font>,
+                              ap_method_registry_destroy,
+                              apr_pool_cleanup_null);
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> put all the standard methods into the registry hash to ease the</b></font>
+<font color="#00ffff"><b>       mapping operations between name and number </b></font><font color="#00ffff"><b>*/</b></font>
+    register_one_method(p, <font color="#ff40ff"><b>&quot;GET&quot;</b></font>, M_GET);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;PUT&quot;</b></font>, M_PUT);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;POST&quot;</b></font>, M_POST);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;DELETE&quot;</b></font>, M_DELETE);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;CONNECT&quot;</b></font>, M_CONNECT);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;OPTIONS&quot;</b></font>, M_OPTIONS);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;TRACE&quot;</b></font>, M_TRACE);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;PATCH&quot;</b></font>, M_PATCH);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;PROPFIND&quot;</b></font>, M_PROPFIND);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;PROPPATCH&quot;</b></font>, M_PROPPATCH);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;MKCOL&quot;</b></font>, M_MKCOL);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;COPY&quot;</b></font>, M_COPY);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;MOVE&quot;</b></font>, M_MOVE);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;LOCK&quot;</b></font>, M_LOCK);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;UNLOCK&quot;</b></font>, M_UNLOCK);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;VERSION-CONTROL&quot;</b></font>, M_VERSION_CONTROL);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;CHECKOUT&quot;</b></font>, M_CHECKOUT);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;UNCHECKOUT&quot;</b></font>, M_UNCHECKOUT);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;CHECKIN&quot;</b></font>, M_CHECKIN);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;UPDATE&quot;</b></font>, M_UPDATE);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;LABEL&quot;</b></font>, M_LABEL);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;REPORT&quot;</b></font>, M_REPORT);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;MKWORKSPACE&quot;</b></font>, M_MKWORKSPACE);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;MKACTIVITY&quot;</b></font>, M_MKACTIVITY);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;BASELINE-CONTROL&quot;</b></font>, M_BASELINE_CONTROL);
+    register_one_method(p, <font color="#ff40ff"><b>&quot;MERGE&quot;</b></font>, M_MERGE);
+
+
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>*</b></font>
+<font color="#00ffff"><b> * @defgroup HTTP_Status HTTP Status Codes</b></font>
+<font color="#00ffff"><b> * @{</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>*</b></font>
+<font color="#00ffff"><b> * The size of the static array in http_protocol.c for storing</b></font>
+<font color="#00ffff"><b> * all of the potential response status-lines (a sparse table).</b></font>
+<font color="#00ffff"><b> * A future version should dynamically generate the apr_table_t at startup.</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define RESPONSE_CODES </b></font><font color="#ff40ff"><b>57</b></font>
+
+<font color="#8080ff"><b>#define HTTP_CONTINUE                      </b></font><font color="#ff40ff"><b>100</b></font>
+<font color="#8080ff"><b>#define HTTP_SWITCHING_PROTOCOLS           </b></font><font color="#ff40ff"><b>101</b></font>
+<font color="#8080ff"><b>#define HTTP_PROCESSING                    </b></font><font color="#ff40ff"><b>102</b></font>
+<font color="#8080ff"><b>#define HTTP_OK                            </b></font><font color="#ff40ff"><b>200</b></font>
+<font color="#8080ff"><b>#define HTTP_CREATED                       </b></font><font color="#ff40ff"><b>201</b></font>
+<font color="#8080ff"><b>#define HTTP_ACCEPTED                      </b></font><font color="#ff40ff"><b>202</b></font>
+<font color="#8080ff"><b>#define HTTP_NON_AUTHORITATIVE             </b></font><font color="#ff40ff"><b>203</b></font>
+<font color="#8080ff"><b>#define HTTP_NO_CONTENT                    </b></font><font color="#ff40ff"><b>204</b></font>
+<font color="#8080ff"><b>#define HTTP_RESET_CONTENT                 </b></font><font color="#ff40ff"><b>205</b></font>
+<font color="#8080ff"><b>#define HTTP_PARTIAL_CONTENT               </b></font><font color="#ff40ff"><b>206</b></font>
+<font color="#8080ff"><b>#define HTTP_MULTI_STATUS                  </b></font><font color="#ff40ff"><b>207</b></font>
+<font color="#8080ff"><b>#define HTTP_MULTIPLE_CHOICES              </b></font><font color="#ff40ff"><b>300</b></font>
+<font color="#8080ff"><b>#define HTTP_MOVED_PERMANENTLY             </b></font><font color="#ff40ff"><b>301</b></font>
+<font color="#8080ff"><b>#define HTTP_MOVED_TEMPORARILY             </b></font><font color="#ff40ff"><b>302</b></font>
+<font color="#8080ff"><b>#define HTTP_SEE_OTHER                     </b></font><font color="#ff40ff"><b>303</b></font>
+<font color="#8080ff"><b>#define HTTP_NOT_MODIFIED                  </b></font><font color="#ff40ff"><b>304</b></font>
+<font color="#8080ff"><b>#define HTTP_USE_PROXY                     </b></font><font color="#ff40ff"><b>305</b></font>
+<font color="#8080ff"><b>#define HTTP_TEMPORARY_REDIRECT            </b></font><font color="#ff40ff"><b>307</b></font>
+<font color="#8080ff"><b>#define HTTP_BAD_REQUEST                   </b></font><font color="#ff40ff"><b>400</b></font>
+<font color="#8080ff"><b>#define HTTP_UNAUTHORIZED                  </b></font><font color="#ff40ff"><b>401</b></font>
+<font color="#8080ff"><b>#define HTTP_PAYMENT_REQUIRED              </b></font><font color="#ff40ff"><b>402</b></font>
+<font color="#8080ff"><b>#define HTTP_FORBIDDEN                     </b></font><font color="#ff40ff"><b>403</b></font>
+<font color="#8080ff"><b>#define HTTP_NOT_FOUND                     </b></font><font color="#ff40ff"><b>404</b></font>
+<font color="#8080ff"><b>#define HTTP_METHOD_NOT_ALLOWED            </b></font><font color="#ff40ff"><b>405</b></font>
+<font color="#8080ff"><b>#define HTTP_NOT_ACCEPTABLE                </b></font><font color="#ff40ff"><b>406</b></font>
+<font color="#8080ff"><b>#define HTTP_PROXY_AUTHENTICATION_REQUIRED </b></font><font color="#ff40ff"><b>407</b></font>
+<font color="#8080ff"><b>#define HTTP_REQUEST_TIME_OUT              </b></font><font color="#ff40ff"><b>408</b></font>
+<font color="#8080ff"><b>#define HTTP_CONFLICT                      </b></font><font color="#ff40ff"><b>409</b></font>
+<font color="#8080ff"><b>#define HTTP_GONE                          </b></font><font color="#ff40ff"><b>410</b></font>
+<font color="#8080ff"><b>#define HTTP_LENGTH_REQUIRED               </b></font><font color="#ff40ff"><b>411</b></font>
+<font color="#8080ff"><b>#define HTTP_PRECONDITION_FAILED           </b></font><font color="#ff40ff"><b>412</b></font>
+<font color="#8080ff"><b>#define HTTP_REQUEST_ENTITY_TOO_LARGE      </b></font><font color="#ff40ff"><b>413</b></font>
+<font color="#8080ff"><b>#define HTTP_REQUEST_URI_TOO_LARGE         </b></font><font color="#ff40ff"><b>414</b></font>
+<font color="#8080ff"><b>#define HTTP_UNSUPPORTED_MEDIA_TYPE        </b></font><font color="#ff40ff"><b>415</b></font>
+<font color="#8080ff"><b>#define HTTP_RANGE_NOT_SATISFIABLE         </b></font><font color="#ff40ff"><b>416</b></font>
+<font color="#8080ff"><b>#define HTTP_EXPECTATION_FAILED            </b></font><font color="#ff40ff"><b>417</b></font>
+<font color="#8080ff"><b>#define HTTP_UNPROCESSABLE_ENTITY          </b></font><font color="#ff40ff"><b>422</b></font>
+<font color="#8080ff"><b>#define HTTP_LOCKED                        </b></font><font color="#ff40ff"><b>423</b></font>
+<font color="#8080ff"><b>#define HTTP_FAILED_DEPENDENCY             </b></font><font color="#ff40ff"><b>424</b></font>
+<font color="#8080ff"><b>#define HTTP_UPGRADE_REQUIRED              </b></font><font color="#ff40ff"><b>426</b></font>
+<font color="#8080ff"><b>#define HTTP_INTERNAL_SERVER_ERROR         </b></font><font color="#ff40ff"><b>500</b></font>
+<font color="#8080ff"><b>#define HTTP_NOT_IMPLEMENTED               </b></font><font color="#ff40ff"><b>501</b></font>
+<font color="#8080ff"><b>#define HTTP_BAD_GATEWAY                   </b></font><font color="#ff40ff"><b>502</b></font>
+<font color="#8080ff"><b>#define HTTP_SERVICE_UNAVAILABLE           </b></font><font color="#ff40ff"><b>503</b></font>
+<font color="#8080ff"><b>#define HTTP_GATEWAY_TIME_OUT              </b></font><font color="#ff40ff"><b>504</b></font>
+<font color="#8080ff"><b>#define HTTP_VERSION_NOT_SUPPORTED         </b></font><font color="#ff40ff"><b>505</b></font>
+<font color="#8080ff"><b>#define HTTP_VARIANT_ALSO_VARIES           </b></font><font color="#ff40ff"><b>506</b></font>
+<font color="#8080ff"><b>#define HTTP_INSUFFICIENT_STORAGE          </b></font><font color="#ff40ff"><b>507</b></font>
+<font color="#8080ff"><b>#define HTTP_NOT_EXTENDED                  </b></font><font color="#ff40ff"><b>510</b></font>
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> The max method number. Method numbers are used to shift bitmasks,</b></font>
+<font color="#00ffff"><b> * so this cannot exceed 63, and all bits high is equal to -1, which is a</b></font>
+<font color="#00ffff"><b> * special flag, so the last bit used has index 62.</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define METHOD_NUMBER_LAST  </b></font><font color="#ff40ff"><b>62</b></font>
+
+
+
+
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> * status_lines[RESPONSE_CODES] =
+<font color="#8080ff"><b>#else</b></font>
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> * <font color="#00ff00"><b>const</b></font> status_lines[RESPONSE_CODES] =
+<font color="#8080ff"><b>#endif</b></font>
+{
+    <font color="#ff40ff"><b>&quot;100 Continue&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;101 Switching Protocols&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;102 Processing&quot;</b></font>,
+<font color="#8080ff"><b>#define LEVEL_200  </b></font><font color="#ff40ff"><b>3</b></font>
+    <font color="#ff40ff"><b>&quot;200 OK&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;201 Created&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;202 Accepted&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;203 Non-Authoritative Information&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;204 No Content&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;205 Reset Content&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;206 Partial Content&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;207 Multi-Status&quot;</b></font>,
+<font color="#8080ff"><b>#define LEVEL_300 </b></font><font color="#ff40ff"><b>11</b></font>
+    <font color="#ff40ff"><b>&quot;300 Multiple Choices&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;301 Moved Permanently&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;302 Found&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;303 See Other&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;304 Not Modified&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;305 Use Proxy&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;306 unused&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;307 Temporary Redirect&quot;</b></font>,
+<font color="#8080ff"><b>#define LEVEL_400 </b></font><font color="#ff40ff"><b>19</b></font>
+    <font color="#ff40ff"><b>&quot;400 Bad Request&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;401 Authorization Required&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;402 Payment Required&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;403 Forbidden&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;404 Not Found&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;405 Method Not Allowed&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;406 Not Acceptable&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;407 Proxy Authentication Required&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;408 Request Time-out&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;409 Conflict&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;410 Gone&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;411 Length Required&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;412 Precondition Failed&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;413 Request Entity Too Large&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;414 Request-URI Too Large&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;415 Unsupported Media Type&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;416 Requested Range Not Satisfiable&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;417 Expectation Failed&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;418 unused&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;419 unused&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;420 unused&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;421 unused&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;422 Unprocessable Entity&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;423 Locked&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;424 Failed Dependency&quot;</b></font>,
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> This is a hack, but it is required for ap_index_of_response</b></font>
+<font color="#00ffff"><b>     * to work with 426.</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#ff40ff"><b>&quot;425 No code&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;426 Upgrade Required&quot;</b></font>,
+<font color="#8080ff"><b>#define LEVEL_500 </b></font><font color="#ff40ff"><b>46</b></font>
+    <font color="#ff40ff"><b>&quot;500 Internal Server Error&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;501 Method Not Implemented&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;502 Bad Gateway&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;503 Service Temporarily Unavailable&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;504 Gateway Time-out&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;505 HTTP Version Not Supported&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;506 Variant Also Negotiates&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;507 Insufficient Storage&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;508 unused&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;509 unused&quot;</b></font>,
+    <font color="#ff40ff"><b>&quot;510 Not Extended&quot;</b></font>
+};
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* is the status code informational </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_is_HTTP_INFO(x)         (((x) &gt;= </b></font><font color="#ff40ff"><b>100</b></font><font color="#8080ff"><b>)&amp;&amp;((x) &lt; </b></font><font color="#ff40ff"><b>200</b></font><font color="#8080ff"><b>))</b></font>
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* is the status code OK ?</b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_is_HTTP_SUCCESS(x)      (((x) &gt;= </b></font><font color="#ff40ff"><b>200</b></font><font color="#8080ff"><b>)&amp;&amp;((x) &lt; </b></font><font color="#ff40ff"><b>300</b></font><font color="#8080ff"><b>))</b></font>
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* is the status code a redirect </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_is_HTTP_REDIRECT(x)     (((x) &gt;= </b></font><font color="#ff40ff"><b>300</b></font><font color="#8080ff"><b>)&amp;&amp;((x) &lt; </b></font><font color="#ff40ff"><b>400</b></font><font color="#8080ff"><b>))</b></font>
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* is the status code a error (client or server) </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_is_HTTP_ERROR(x)        (((x) &gt;= </b></font><font color="#ff40ff"><b>400</b></font><font color="#8080ff"><b>)&amp;&amp;((x) &lt; </b></font><font color="#ff40ff"><b>600</b></font><font color="#8080ff"><b>))</b></font>
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* is the status code a client error  </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_is_HTTP_CLIENT_ERROR(x) (((x) &gt;= </b></font><font color="#ff40ff"><b>400</b></font><font color="#8080ff"><b>)&amp;&amp;((x) &lt; </b></font><font color="#ff40ff"><b>500</b></font><font color="#8080ff"><b>))</b></font>
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* is the status code a server error  </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_is_HTTP_SERVER_ERROR(x) (((x) &gt;= </b></font><font color="#ff40ff"><b>500</b></font><font color="#8080ff"><b>)&amp;&amp;((x) &lt; </b></font><font color="#ff40ff"><b>600</b></font><font color="#8080ff"><b>))</b></font>
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* is the status code a (potentially) valid response code?  </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_is_HTTP_VALID_RESPONSE(x) (((x) &gt;= </b></font><font color="#ff40ff"><b>100</b></font><font color="#8080ff"><b>)&amp;&amp;((x) &lt; </b></font><font color="#ff40ff"><b>600</b></font><font color="#8080ff"><b>))</b></font>
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>* should the status code drop the connection </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#8080ff"><b>#define ap_status_drops_connection(x) \</b></font>
+<font color="#8080ff"><b>                                   (((x) == HTTP_BAD_REQUEST)           || \</b></font>
+<font color="#8080ff"><b>                                    ((x) == HTTP_REQUEST_TIME_OUT)      || \</b></font>
+<font color="#8080ff"><b>                                    ((x) == HTTP_LENGTH_REQUIRED)       || \</b></font>
+<font color="#8080ff"><b>                                    ((x) == HTTP_REQUEST_ENTITY_TOO_LARGE) || \</b></font>
+<font color="#8080ff"><b>                                    ((x) == HTTP_REQUEST_URI_TOO_LARGE) || \</b></font>
+<font color="#8080ff"><b>                                    ((x) == HTTP_INTERNAL_SERVER_ERROR) || \</b></font>
+<font color="#8080ff"><b>                                    ((x) == HTTP_SERVICE_UNAVAILABLE) || \</b></font>
+<font color="#8080ff"><b>                                    ((x) == HTTP_NOT_IMPLEMENTED))</b></font>
+
+
+
+
+
+
+<font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b> * mod_headers.c: Add/append/remove HTTP response headers</b></font>
+<font color="#00ffff"><b> *     Written by Paul Sutton, paul@ukweb.com, 1 Oct 1996</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * The Header directive can be used to add/replace/remove HTTP headers</b></font>
+<font color="#00ffff"><b> * within the response message.  The RequestHeader directive can be used</b></font>
+<font color="#00ffff"><b> * to add/replace/remove HTTP headers before a request message is processed.</b></font>
+<font color="#00ffff"><b> * Valid in both per-server and per-dir configurations.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Syntax is:</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> *   Header action header value</b></font>
+<font color="#00ffff"><b> *   RequestHeader action header value</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Where action is one of:</b></font>
+<font color="#00ffff"><b> *     set    - set this header, replacing any old value</b></font>
+<font color="#00ffff"><b> *     add    - add this header, possible resulting in two or more</b></font>
+<font color="#00ffff"><b> *              headers with the same name</b></font>
+<font color="#00ffff"><b> *     append - append this text onto any existing header of this same</b></font>
+<font color="#00ffff"><b> *     unset  - remove this header</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Where action is unset, the third argument (value) should not be given.</b></font>
+<font color="#00ffff"><b> * The header name can include the colon, or not.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * The Header and RequestHeader directives can only be used where allowed</b></font>
+<font color="#00ffff"><b> * by the FileInfo override.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * When the request is processed, the header directives are processed in</b></font>
+<font color="#00ffff"><b> * this order: firstly, the main server, then the virtual server handling</b></font>
+<font color="#00ffff"><b> * this request (if any), then any &lt;Directory&gt; sections (working downwards</b></font>
+<font color="#00ffff"><b> * from the root dir), then an &lt;Location&gt; sections (working down from</b></font>
+<font color="#00ffff"><b> * shortest URL component), the any &lt;File&gt; sections. This order is</b></font>
+<font color="#00ffff"><b> * important if any 'set' or 'unset' actions are used. For example,</b></font>
+<font color="#00ffff"><b> * the following two directives have different effect if applied in</b></font>
+<font color="#00ffff"><b> * the reverse order:</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> *   Header append Author &quot;John P. Doe&quot;</b></font>
+<font color="#00ffff"><b> *   Header unset Author</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Examples:</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> *  To set the &quot;Author&quot; header, use</b></font>
+<font color="#00ffff"><b> *     Header add Author &quot;John P. Doe&quot;</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> *  To remove a header:</b></font>
+<font color="#00ffff"><b> *     Header unset Author</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+    register_format_tag_handler(<font color="#ff40ff"><b>&quot;D&quot;</b></font>, (<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>void</b></font> *)header_request_duration);
+    register_format_tag_handler(<font color="#ff40ff"><b>&quot;t&quot;</b></font>, (<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>void</b></font> *)header_request_time);
+    register_format_tag_handler(<font color="#ff40ff"><b>&quot;e&quot;</b></font>, (<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>void</b></font> *)header_request_env_var);
+    register_format_tag_handler(<font color="#ff40ff"><b>&quot;s&quot;</b></font>, (<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>void</b></font> *)header_request_ssl_var);
+
+<font color="#00ff00"><b>typedef</b></font> <font color="#00ff00"><b>enum</b></font> {
+    hdr_add = <font color="#ff40ff"><b>'a'</b></font>,              <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> add header (could mean multiple hdrs) </b></font><font color="#00ffff"><b>*/</b></font>
+    hdr_set = <font color="#ff40ff"><b>'s'</b></font>,              <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> set (replace old value) </b></font><font color="#00ffff"><b>*/</b></font>
+    hdr_append = <font color="#ff40ff"><b>'m'</b></font>,           <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> append (merge into any old value) </b></font><font color="#00ffff"><b>*/</b></font>
+    hdr_unset = <font color="#ff40ff"><b>'u'</b></font>,            <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> unset header </b></font><font color="#00ffff"><b>*/</b></font>
+    hdr_echo = <font color="#ff40ff"><b>'e'</b></font>,             <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> echo headers from request to response </b></font><font color="#00ffff"><b>*/</b></font>
+    hdr_edit = <font color="#ff40ff"><b>'r'</b></font>              <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> change value by regexp </b></font><font color="#00ffff"><b>*/</b></font>
+} hdr_actions;
+
+<font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b> * magic cmd-&gt;info values</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>char</b></font> hdr_in  = <font color="#ff40ff"><b>'0'</b></font>;  <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> RequestHeader </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>char</b></font> hdr_out = <font color="#ff40ff"><b>'1'</b></font>;  <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Header onsuccess </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>char</b></font> hdr_err = <font color="#ff40ff"><b>'2'</b></font>;  <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Header always </b></font><font color="#00ffff"><b>*/</b></font>
+
+
+
+<font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b> * A format string consists of white space, text and optional format</b></font>
+<font color="#00ffff"><b> * tags in any order. E.g.,</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Header add MyHeader &quot;Free form text %D %t more text&quot;</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Decompose the format string into its tags. Each tag (struct format_tag)</b></font>
+<font color="#00ffff"><b> * contains a pointer to the function used to format the tag. Then save each</b></font>
+<font color="#00ffff"><b> * tag in the tag array anchored in the header_entry.</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+
+
+        <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;first argument must be 'add', 'set', 'append', 'unset', &quot;</b></font>
+               <font color="#ff40ff"><b>&quot;'echo' or 'edit'.&quot;</b></font>;
+
+    <font color="#ffff00"><b>if</b></font> (new-&gt;action == hdr_edit) {
+        <font color="#ffff00"><b>if</b></font> (subs == <font color="#ff40ff"><b>NULL</b></font>) {
+            <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Header edit requires a match and a substitution&quot;</b></font>;
+        }
+
+ <font color="#ffff00"><b>if</b></font> (new-&gt;action == hdr_edit) {
+        <font color="#ffff00"><b>if</b></font> (subs == <font color="#ff40ff"><b>NULL</b></font>) {
+            <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Header edit requires a match and a substitution&quot;</b></font>;
+        }
+        new-&gt;regex = ap_pregcomp(cmd-&gt;pool, value, AP_REG_EXTENDED);
+        <font color="#ffff00"><b>if</b></font> (new-&gt;regex == <font color="#ff40ff"><b>NULL</b></font>) {
+            <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Header edit regex could not be compiled&quot;</b></font>;
+        }
+        new-&gt;subs = subs;
+    }
+    <font color="#ffff00"><b>else</b></font> {
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> there's no subs, so envclause is really that argument </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>if</b></font> (envclause != <font color="#ff40ff"><b>NULL</b></font>) {
+            <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Too many arguments to directive&quot;</b></font>;
+        }
+        envclause = subs;
+    }
+    <font color="#ffff00"><b>if</b></font> (new-&gt;action == hdr_unset) {
+        <font color="#ffff00"><b>if</b></font> (value) {
+            <font color="#ffff00"><b>if</b></font> (envclause) {
+                <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;header unset takes two arguments&quot;</b></font>;
+            }
+            envclause = value;
+            value = <font color="#ff40ff"><b>NULL</b></font>;
+        }
+    }
+    <font color="#ffff00"><b>else</b></font> <font color="#ffff00"><b>if</b></font> (new-&gt;action == hdr_echo) {
+        ap_regex_t *regex;
+
+        <font color="#ffff00"><b>if</b></font> (value) {
+            <font color="#ffff00"><b>if</b></font> (envclause) {
+                <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Header echo takes two arguments&quot;</b></font>;
+            }
+            envclause = value;
+            value = <font color="#ff40ff"><b>NULL</b></font>;
+        }
+        <font color="#ffff00"><b>if</b></font> (cmd-&gt;info != &amp;hdr_out &amp;&amp; cmd-&gt;info != &amp;hdr_err)
+            <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Header echo only valid on Header &quot;</b></font>
+                   <font color="#ff40ff"><b>&quot;directives&quot;</b></font>;
+        <font color="#ffff00"><b>else</b></font> {
+            regex = ap_pregcomp(cmd-&gt;pool, hdr, AP_REG_EXTENDED | AP_REG_NOSUB);
+            <font color="#ffff00"><b>if</b></font> (regex == <font color="#ff40ff"><b>NULL</b></font>) {
+                <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Header echo regex could not be compiled&quot;</b></font>;
+            }
+        }
+        new-&gt;regex = regex;
+    }
+    <font color="#ffff00"><b>else</b></font> <font color="#ffff00"><b>if</b></font> (!value)
+        <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;Header requires three arguments&quot;</b></font>;
+   <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Handle the envclause on Header </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#ffff00"><b>if</b></font> (envclause != <font color="#ff40ff"><b>NULL</b></font>) {
+        <font color="#ffff00"><b>if</b></font> (strcasecmp(envclause, <font color="#ff40ff"><b>&quot;early&quot;</b></font>) == <font color="#ff40ff"><b>0</b></font>) {
+            condition_var = condition_early;
+        }
+        <font color="#ffff00"><b>else</b></font> {
+            <font color="#ffff00"><b>if</b></font> (strncasecmp(envclause, <font color="#ff40ff"><b>&quot;env=&quot;</b></font>, <font color="#ff40ff"><b>4</b></font>) != <font color="#ff40ff"><b>0</b></font>) {
+                <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;error: envclause should be in the form env=envar&quot;</b></font>;
+            }
+            <font color="#ffff00"><b>if</b></font> ((envclause[<font color="#ff40ff"><b>4</b></font>] == <font color="#ff6060"><b>'\0'</b></font>)
+                || ((envclause[<font color="#ff40ff"><b>4</b></font>] == <font color="#ff40ff"><b>'!'</b></font>) &amp;&amp; (envclause[<font color="#ff40ff"><b>5</b></font>] == <font color="#ff6060"><b>'\0'</b></font>))) {
+                <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>&quot;error: missing environment variable name. &quot;</b></font>
+                    <font color="#ff40ff"><b>&quot;envclause should be in the form env=envar &quot;</b></font>;
+
+
+
+    AP_INIT_RAW_ARGS(<font color="#ff40ff"><b>&quot;Header&quot;</b></font>, header_cmd, &amp;hdr_out, OR_FILEINFO,
+                     <font color="#ff40ff"><b>&quot;an optional condition, an action, header and value &quot;</b></font>
+                     <font color="#ff40ff"><b>&quot;followed by optional env clause&quot;</b></font>),
+    AP_INIT_RAW_ARGS(<font color="#ff40ff"><b>&quot;RequestHeader&quot;</b></font>, header_cmd, &amp;hdr_in, OR_FILEINFO,
+                     <font color="#ff40ff"><b>&quot;an action, header and value followed by optional env &quot;</b></font>
+                     <font color="#ff40ff"><b>&quot;clause&quot;</b></font>),
+
+
+
+    <font color="#ffff00"><b>else</b></font> <font color="#ffff00"><b>if</b></font> (!r-&gt;content_type || strcmp(r-&gt;content_type, ct)) {
+        r-&gt;content_type = ct;
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Insert filters requested by the AddOutputFiltersByType</b></font>
+<font color="#00ffff"><b>         * configuration directive. Content-type filters must be</b></font>
+<font color="#00ffff"><b>         * inserted after the content handlers have run because</b></font>
+<font color="#00ffff"><b>         * only then, do we reliably know the content-type.</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        ap_add_output_filters_by_type(r);
+    }
+}
+
+
+
+
+
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> construct and return the default error message for a given</b></font>
+<font color="#00ffff"><b> * HTTP defined error code</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *get_canned_error_string(<font color="#00ff00"><b>int</b></font> status,
+                                           request_rec *r,
+                                           <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *location)
+{
+    apr_pool_t *p = r-&gt;pool;
+    <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *error_notes, *h1, *s1;
+
+    <font color="#ffff00"><b>switch</b></font> (status) {
+    <font color="#ffff00"><b>case</b></font> HTTP_MOVED_PERMANENTLY:
+    <font color="#ffff00"><b>case</b></font> HTTP_MOVED_TEMPORARILY:
+    <font color="#ffff00"><b>case</b></font> HTTP_TEMPORARY_REDIRECT:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The document has moved &lt;a href=</b></font><font color="#ff6060"><b>\&quot;</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, location),
+                           <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\&quot;</b></font><font color="#ff40ff"><b>&gt;here&lt;/a&gt;.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_SEE_OTHER:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The answer to your request is located &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;&lt;a href=</b></font><font color="#ff6060"><b>\&quot;</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, location),
+                           <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\&quot;</b></font><font color="#ff40ff"><b>&gt;here&lt;/a&gt;.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_USE_PROXY:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;This resource is only accessible &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;through the proxy</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, location),
+                           <font color="#ff40ff"><b>&quot;&lt;br /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>You will need to configure &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;your client to use that proxy.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_PROXY_AUTHENTICATION_REQUIRED:
+    <font color="#ffff00"><b>case</b></font> HTTP_UNAUTHORIZED:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;This server could not verify that you</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;are authorized to access the document</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;requested.  Either you supplied the wrong</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;credentials (e.g., bad password), or your</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;browser doesn't understand how to supply</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;the credentials required.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_BAD_REQUEST:
+        <font color="#ffff00"><b>return</b></font>(add_optional_notes(r,
+                                  <font color="#ff40ff"><b>&quot;&lt;p&gt;Your browser sent a request that &quot;</b></font>
+                                  <font color="#ff40ff"><b>&quot;this server could not understand.&lt;br /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                                  <font color="#ff40ff"><b>&quot;error-notes&quot;</b></font>,
+                                  <font color="#ff40ff"><b>&quot;&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_FORBIDDEN:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;You don't have permission to access &quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, r-&gt;uri),
+                           <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>on this server.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_NOT_FOUND:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The requested URL &quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, r-&gt;uri),
+                           <font color="#ff40ff"><b>&quot; was not found on this server.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_METHOD_NOT_ALLOWED:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The requested method &quot;</b></font>, r-&gt;method,
+                           <font color="#ff40ff"><b>&quot; is not allowed for the URL &quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, r-&gt;uri),
+                           <font color="#ff40ff"><b>&quot;.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_NOT_ACCEPTABLE:
+        s1 = apr_pstrcat(p,
+                         <font color="#ff40ff"><b>&quot;&lt;p&gt;An appropriate representation of the &quot;</b></font>
+                         <font color="#ff40ff"><b>&quot;requested resource &quot;</b></font>,
+                         ap_escape_html(r-&gt;pool, r-&gt;uri),
+                         <font color="#ff40ff"><b>&quot; could not be found on this server.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                         <font color="#ff40ff"><b>NULL</b></font>);
+        <font color="#ffff00"><b>return</b></font>(add_optional_notes(r, s1, <font color="#ff40ff"><b>&quot;variant-list&quot;</b></font>, <font color="#ff40ff"><b>&quot;&quot;</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_MULTIPLE_CHOICES:
+        <font color="#ffff00"><b>return</b></font>(add_optional_notes(r, <font color="#ff40ff"><b>&quot;&quot;</b></font>, <font color="#ff40ff"><b>&quot;variant-list&quot;</b></font>, <font color="#ff40ff"><b>&quot;&quot;</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_LENGTH_REQUIRED:
+        s1 = apr_pstrcat(p,
+                         <font color="#ff40ff"><b>&quot;&lt;p&gt;A request of the requested method &quot;</b></font>,
+                         r-&gt;method,
+                         <font color="#ff40ff"><b>&quot; requires a valid Content-length.&lt;br /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                         <font color="#ff40ff"><b>NULL</b></font>);
+        <font color="#ffff00"><b>return</b></font>(add_optional_notes(r, s1, <font color="#ff40ff"><b>&quot;error-notes&quot;</b></font>, <font color="#ff40ff"><b>&quot;&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_PRECONDITION_FAILED:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The precondition on the request &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;for the URL &quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, r-&gt;uri),
+                           <font color="#ff40ff"><b>&quot; evaluated to false.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_NOT_IMPLEMENTED:
+        s1 = apr_pstrcat(p,
+                         <font color="#ff40ff"><b>&quot;&lt;p&gt;&quot;</b></font>,
+                         ap_escape_html(r-&gt;pool, r-&gt;method), <font color="#ff40ff"><b>&quot; to &quot;</b></font>,
+                         ap_escape_html(r-&gt;pool, r-&gt;uri),
+                         <font color="#ff40ff"><b>&quot; not supported.&lt;br /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                         <font color="#ff40ff"><b>NULL</b></font>);
+        <font color="#ffff00"><b>return</b></font>(add_optional_notes(r, s1, <font color="#ff40ff"><b>&quot;error-notes&quot;</b></font>, <font color="#ff40ff"><b>&quot;&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_BAD_GATEWAY:
+        s1 = <font color="#ff40ff"><b>&quot;&lt;p&gt;The proxy server received an invalid&quot;</b></font> CRLF
+            <font color="#ff40ff"><b>&quot;response from an upstream server.&lt;br /&gt;&quot;</b></font> CRLF;
+        <font color="#ffff00"><b>return</b></font>(add_optional_notes(r, s1, <font color="#ff40ff"><b>&quot;error-notes&quot;</b></font>, <font color="#ff40ff"><b>&quot;&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_VARIANT_ALSO_VARIES:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;A variant for the requested &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;resource</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&lt;pre&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, r-&gt;uri),
+                           <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&lt;/pre&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>is itself a negotiable resource. &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;This indicates a configuration error.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_REQUEST_TIME_OUT:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;Server timeout waiting for the HTTP request from the client.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_GONE:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The requested resource&lt;br /&gt;&quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, r-&gt;uri),
+                           <font color="#ff40ff"><b>&quot;&lt;br /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>is no longer available on this server &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;and there is no forwarding address.</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;Please remove all references to this &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;resource.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_REQUEST_ENTITY_TOO_LARGE:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;The requested resource&lt;br /&gt;&quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, r-&gt;uri), <font color="#ff40ff"><b>&quot;&lt;br /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>&quot;does not allow request data with &quot;</b></font>,
+                           r-&gt;method,
+                           <font color="#ff40ff"><b>&quot; requests, or the amount of data provided in</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;the request exceeds the capacity limit.</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_REQUEST_URI_TOO_LARGE:
+        s1 = <font color="#ff40ff"><b>&quot;&lt;p&gt;The requested URL's length exceeds the capacity</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+             <font color="#ff40ff"><b>&quot;limit for this server.&lt;br /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>;
+        <font color="#ffff00"><b>return</b></font>(add_optional_notes(r, s1, <font color="#ff40ff"><b>&quot;error-notes&quot;</b></font>, <font color="#ff40ff"><b>&quot;&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_UNSUPPORTED_MEDIA_TYPE:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The supplied request data is not in a format</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;acceptable for processing by this resource.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_RANGE_NOT_SATISFIABLE:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;None of the range-specifier values in the Range</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;request-header field overlap the current extent</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;of the selected resource.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_EXPECTATION_FAILED:
+        <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The expectation given in the Expect &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;request-header&quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>field could not be met by this server.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;&lt;p&gt;The client sent&lt;pre&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>    Expect: &quot;</b></font>,
+                           ap_escape_html(r-&gt;pool, apr_table_get(r-&gt;headers_in, <font color="#ff40ff"><b>&quot;Expect&quot;</b></font>)),
+                           <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&lt;/pre&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;but we only allow the 100-continue &quot;</b></font>
+                           <font color="#ff40ff"><b>&quot;expectation.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                           <font color="#ff40ff"><b>NULL</b></font>));
+    <font color="#ffff00"><b>case</b></font> HTTP_UNPROCESSABLE_ENTITY:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The server understands the media type of the</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;request entity, but was unable to process the</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;contained instructions.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_LOCKED:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The requested resource is currently locked.</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;The lock must be released or proper identification</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;given before the method can be applied.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_FAILED_DEPENDENCY:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The method could not be performed on the resource</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;because the requested action depended on another</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;action and that other action failed.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_UPGRADE_REQUIRED:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The requested resource can only be retrieved</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;using SSL.  The server is willing to upgrade the current</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;connection to SSL, but your client doesn't support it.</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;Either upgrade your client, or try requesting the page</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;using https://</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_INSUFFICIENT_STORAGE:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The method could not be performed on the resource</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;because the server is unable to store the</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;representation needed to successfully complete the</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;request.  There is insufficient free space left in</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;your storage allocation.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_SERVICE_UNAVAILABLE:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The server is temporarily unable to service your</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;request due to maintenance downtime or capacity</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;problems. Please try again later.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_GATEWAY_TIME_OUT:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;The proxy server did not receive a timely response</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;from the upstream server.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>case</b></font> HTTP_NOT_EXTENDED:
+        <font color="#ffff00"><b>return</b></font>(<font color="#ff40ff"><b>&quot;&lt;p&gt;A mandatory extension policy in the request is not</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+               <font color="#ff40ff"><b>&quot;accepted by the server for this resource.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+    <font color="#ffff00"><b>default</b></font>:                    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> HTTP_INTERNAL_SERVER_ERROR </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>         * This comparison to expose error-notes could be modified to</b></font>
+<font color="#00ffff"><b>         * use a configuration directive and export based on that</b></font>
+<font color="#00ffff"><b>         * directive.  For now &quot;*&quot; is used to designate an error-notes</b></font>
+<font color="#00ffff"><b>         * that is totally safe for any user to see (ie lacks paths,</b></font>
+<font color="#00ffff"><b>         * database passwords, etc.)</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>if</b></font> (((error_notes = apr_table_get(r-&gt;notes,
+                                          <font color="#ff40ff"><b>&quot;error-notes&quot;</b></font>)) != <font color="#ff40ff"><b>NULL</b></font>)
+            &amp;&amp; (h1 = apr_table_get(r-&gt;notes, <font color="#ff40ff"><b>&quot;verbose-error-to&quot;</b></font>)) != <font color="#ff40ff"><b>NULL</b></font>
+            &amp;&amp; (strcmp(h1, <font color="#ff40ff"><b>&quot;*&quot;</b></font>) == <font color="#ff40ff"><b>0</b></font>)) {
+            <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p, error_notes, <font color="#ff40ff"><b>&quot;&lt;p /&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>, <font color="#ff40ff"><b>NULL</b></font>));
+        }
+        <font color="#ffff00"><b>else</b></font> {
+            <font color="#ffff00"><b>return</b></font>(apr_pstrcat(p,
+                               <font color="#ff40ff"><b>&quot;&lt;p&gt;The server encountered an internal &quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;error or</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;misconfiguration and was unable to complete</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;your request.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;&lt;p&gt;Please contact the server &quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;administrator,</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b> &quot;</b></font>,
+                               ap_escape_html(r-&gt;pool,
+                                              r-&gt;server-&gt;server_admin),
+                               <font color="#ff40ff"><b>&quot; and inform them of the time the &quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;error occurred,</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;and anything you might have done that &quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;may have</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;caused the error.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;&lt;p&gt;More information about this error &quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;may be available</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>
+                               <font color="#ff40ff"><b>&quot;in the server error log.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                               <font color="#ff40ff"><b>NULL</b></font>));
+        }
+
+
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> For all HTTP/1.x responses for which we generate the message,</b></font>
+<font color="#00ffff"><b>         * we need to avoid inheriting the &quot;normal status&quot; header fields</b></font>
+<font color="#00ffff"><b>         * that may have been set by the request handler before the</b></font>
+<font color="#00ffff"><b>         * error or redirect, except for Location on external redirects.</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        r-&gt;headers_out = r-&gt;err_headers_out;
+        r-&gt;err_headers_out = tmp;
+        apr_table_clear(r-&gt;err_headers_out);
+
+        <font color="#ffff00"><b>if</b></font> (ap_is_HTTP_REDIRECT(status) || (status == HTTP_CREATED)) {
+            <font color="#ffff00"><b>if</b></font> ((location != <font color="#ff40ff"><b>NULL</b></font>) &amp;&amp; *location) {
+                apr_table_setn(r-&gt;headers_out, <font color="#ff40ff"><b>&quot;Location&quot;</b></font>, location);
+            }
+            <font color="#ffff00"><b>else</b></font> {
+                location = <font color="#ff40ff"><b>&quot;&quot;</b></font>;   <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> avoids coredump when printing, below </b></font><font color="#00ffff"><b>*/</b></font>
+            }
+        }
+
+        r-&gt;content_languages = <font color="#ff40ff"><b>NULL</b></font>;
+        r-&gt;content_encoding = <font color="#ff40ff"><b>NULL</b></font>;
+
+        <font color="#ffff00"><b>if</b></font> ((status == HTTP_METHOD_NOT_ALLOWED)
+            || (status == HTTP_NOT_IMPLEMENTED)) {
+            apr_table_setn(r-&gt;headers_out, <font color="#ff40ff"><b>&quot;Allow&quot;</b></font>, make_allow(r));
+        }
+
+
+    <font color="#ffff00"><b>if</b></font> ((custom_response = ap_response_code_string(r, idx))) {
+        <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>         * We have a custom response output. This should only be</b></font>
+<font color="#00ffff"><b>         * a text-string to write back. But if the ErrorDocument</b></font>
+<font color="#00ffff"><b>         * was a local redirect and the requested resource failed</b></font>
+<font color="#00ffff"><b>         * for any reason, the custom_response will still hold the</b></font>
+<font color="#00ffff"><b>         * redirect URL. We don't really want to output this URL</b></font>
+<font color="#00ffff"><b>         * as a text message, so first check the custom response</b></font>
+<font color="#00ffff"><b>         * string to ensure that it is a text-string (using the</b></font>
+<font color="#00ffff"><b>         * same test used in ap_die(), i.e. does it start with a &quot;).</b></font>
+<font color="#00ffff"><b>         *</b></font>
+<font color="#00ffff"><b>         * If it's not a text string, we've got a recursive error or</b></font>
+<font color="#00ffff"><b>         * an external redirect.  If it's a recursive error, ap_die passes</b></font>
+<font color="#00ffff"><b>         * us the second error code so we can write both, and has already</b></font>
+<font color="#00ffff"><b>         * backed up to the original error.  If it's an external redirect,</b></font>
+<font color="#00ffff"><b>         * it hasn't happened yet; we may never know if it fails.</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>if</b></font> (custom_response[<font color="#ff40ff"><b>0</b></font>] == <font color="#ff6060"><b>'\&quot;'</b></font>) {
+            ap_rputs(custom_response + <font color="#ff40ff"><b>1</b></font>, r);
+            ap_finalize_request_protocol(r);
+            <font color="#ffff00"><b>return</b></font>;
+        }
+    }
+    {
+        <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *title = status_lines[idx];
+        <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *h1;
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Accept a status_line set by a module, but only if it begins</b></font>
+<font color="#00ffff"><b>         * with the 3 digit status code</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>if</b></font> (r-&gt;status_line != <font color="#ff40ff"><b>NULL</b></font>
+            &amp;&amp; strlen(r-&gt;status_line) &gt; <font color="#ff40ff"><b>4</b></font>       <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> long enough </b></font><font color="#00ffff"><b>*/</b></font>
+            &amp;&amp; apr_isdigit(r-&gt;status_line[<font color="#ff40ff"><b>0</b></font>])
+            &amp;&amp; apr_isdigit(r-&gt;status_line[<font color="#ff40ff"><b>1</b></font>])
+            &amp;&amp; apr_isdigit(r-&gt;status_line[<font color="#ff40ff"><b>2</b></font>])
+            &amp;&amp; apr_isspace(r-&gt;status_line[<font color="#ff40ff"><b>3</b></font>])
+            &amp;&amp; apr_isalnum(r-&gt;status_line[<font color="#ff40ff"><b>4</b></font>])) {
+            title = r-&gt;status_line;
+        }
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> folks decided they didn't want the error code in the H1 text </b></font><font color="#00ffff"><b>*/</b></font>
+        h1 = &amp;title[<font color="#ff40ff"><b>4</b></font>];
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> can't count on a charset filter being in place here,</b></font>
+<font color="#00ffff"><b>         * so do ebcdic-&gt;ascii translation explicitly (if needed)</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+
+        ap_rvputs_proto_in_ascii(r,
+                  DOCTYPE_HTML_2_0
+                  <font color="#ff40ff"><b>&quot;&lt;html&gt;&lt;head&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&lt;title&gt;&quot;</b></font>, title,
+                  <font color="#ff40ff"><b>&quot;&lt;/title&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&lt;/head&gt;&lt;body&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&lt;h1&gt;&quot;</b></font>, h1, <font color="#ff40ff"><b>&quot;&lt;/h1&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                  <font color="#ff40ff"><b>NULL</b></font>);
+
+        ap_rvputs_proto_in_ascii(r,
+                                 get_canned_error_string(status, r, location),
+                                 <font color="#ff40ff"><b>NULL</b></font>);
+
+        <font color="#ffff00"><b>if</b></font> (recursive_error) {
+            ap_rvputs_proto_in_ascii(r, <font color="#ff40ff"><b>&quot;&lt;p&gt;Additionally, a &quot;</b></font>,
+                      status_lines[ap_index_of_response(recursive_error)],
+                      <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>error was encountered while trying to use an &quot;</b></font>
+                      <font color="#ff40ff"><b>&quot;ErrorDocument to handle the request.&lt;/p&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>, <font color="#ff40ff"><b>NULL</b></font>);
+        }
+        ap_rvputs_proto_in_ascii(r, ap_psignature(<font color="#ff40ff"><b>&quot;&lt;hr&gt;</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>, r), <font color="#ff40ff"><b>NULL</b></font>);
+        ap_rvputs_proto_in_ascii(r, <font color="#ff40ff"><b>&quot;&lt;a rel=&quot;</b></font>bookmark<font color="#ff40ff"><b>&quot; href=&quot;</b></font>http:<font color="#00ffff"><b>//www.askapache.com/&quot; title=&quot;Web Development, Programming, Web Design, Security, Web Hosting and Apache .htaccess, Server Articles&quot;&gt;AskApache Web Development&lt;/a&gt;&lt;/body&gt;&lt;/html&gt;\n&quot;, NULL);</b></font>
+    <span style="background-color: #ff6060"><font color="#ffffff"><b>}</b></font></span>
+    ap_finalize_request_protocol(r);
+<span style="background-color: #ff6060"><font color="#ffffff"><b>}</b></font></span>
+
+
+
+
+
+
+
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>const</b></font> command_rec command_table[] = <span style="background-color: #ff6060"><font color="#ffffff"><b>{</b></font></span>
+    AP_INIT_FLAG(    <font color="#ff40ff"><b>&quot;RewriteEngine&quot;</b></font>,   cmd_rewriteengine,  <font color="#ff40ff"><b>NULL</b></font>, OR_FILEINFO,
+                     <font color="#ff40ff"><b>&quot;On or Off to enable or disable (default) the whole &quot;</b></font>
+                     <font color="#ff40ff"><b>&quot;rewriting engine&quot;</b></font>),
+    AP_INIT_ITERATE( <font color="#ff40ff"><b>&quot;RewriteOptions&quot;</b></font>,  cmd_rewriteoptions,  <font color="#ff40ff"><b>NULL</b></font>, OR_FILEINFO,
+                     <font color="#ff40ff"><b>&quot;List of option strings to set&quot;</b></font>),
+    AP_INIT_TAKE1(   <font color="#ff40ff"><b>&quot;RewriteBase&quot;</b></font>,     cmd_rewritebase,     <font color="#ff40ff"><b>NULL</b></font>, OR_FILEINFO,
+                     <font color="#ff40ff"><b>&quot;the base URL of the per-directory context&quot;</b></font>),
+    AP_INIT_RAW_ARGS(<font color="#ff40ff"><b>&quot;RewriteCond&quot;</b></font>,     cmd_rewritecond,     <font color="#ff40ff"><b>NULL</b></font>, OR_FILEINFO,
+                     <font color="#ff40ff"><b>&quot;an input string and a to be applied regexp-pattern&quot;</b></font>),
+    AP_INIT_RAW_ARGS(<font color="#ff40ff"><b>&quot;RewriteRule&quot;</b></font>,     cmd_rewriterule,     <font color="#ff40ff"><b>NULL</b></font>, OR_FILEINFO,
+                     <font color="#ff40ff"><b>&quot;an URL-applied regexp-pattern and a substitution URL&quot;</b></font>),
+    AP_INIT_TAKE2(   <font color="#ff40ff"><b>&quot;RewriteMap&quot;</b></font>,      cmd_rewritemap,      <font color="#ff40ff"><b>NULL</b></font>, RSRC_CONF,
+                     <font color="#ff40ff"><b>&quot;a mapname and a filename&quot;</b></font>),
+    AP_INIT_TAKE1(   <font color="#ff40ff"><b>&quot;RewriteLock&quot;</b></font>,     cmd_rewritelock,     <font color="#ff40ff"><b>NULL</b></font>, RSRC_CONF,
+                     <font color="#ff40ff"><b>&quot;the filename of a lockfile used for inter-process &quot;</b></font>
+                     <font color="#ff40ff"><b>&quot;synchronization&quot;</b></font>),
+<font color="#8080ff"><b>#ifndef REWRITELOG_DISABLED</b></font>
+    AP_INIT_TAKE1(   <font color="#ff40ff"><b>&quot;RewriteLog&quot;</b></font>,      cmd_rewritelog,      <font color="#ff40ff"><b>NULL</b></font>, RSRC_CONF,
+                     <font color="#ff40ff"><b>&quot;the filename of the rewriting logfile&quot;</b></font>),
+    AP_INIT_TAKE1(   <font color="#ff40ff"><b>&quot;RewriteLogLevel&quot;</b></font>, cmd_rewriteloglevel, <font color="#ff40ff"><b>NULL</b></font>, RSRC_CONF,
+                     <font color="#ff40ff"><b>&quot;the level of the rewriting logfile verbosity &quot;</b></font>
+                     <font color="#ff40ff"><b>&quot;(0=none, 1=std, .., 9=max)&quot;</b></font>),
+<font color="#8080ff"><b>#else</b></font>
+    AP_INIT_TAKE1(   <font color="#ff40ff"><b>&quot;RewriteLog&quot;</b></font>, fake_rewritelog, <font color="#ff40ff"><b>NULL</b></font>, RSRC_CONF,
+                     <font color="#ff40ff"><b>&quot;[DISABLED] the filename of the rewriting logfile&quot;</b></font>),
+    AP_INIT_TAKE1(   <font color="#ff40ff"><b>&quot;RewriteLogLevel&quot;</b></font>, fake_rewritelog, <font color="#ff40ff"><b>NULL</b></font>, RSRC_CONF,
+                     <font color="#ff40ff"><b>&quot;[DISABLED] the level of the rewriting logfile verbosity&quot;</b></font>),
+<font color="#8080ff"><b>#endif</b></font>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b> * mod_actions.c: executes scripts based on MIME type or HTTP method</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * by Alexei Kosut; based on mod_cgi.c, mod_mime.c and mod_includes.c,</b></font>
+<font color="#00ffff"><b> * adapted by rst from original NCSA code by Rob McCool</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Usage instructions:</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Action mime/type /cgi-bin/script</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * will activate /cgi-bin/script when a file of content type mime/type is</b></font>
+<font color="#00ffff"><b> * requested. It sends the URL and file path of the requested document using</b></font>
+<font color="#00ffff"><b> * the standard CGI PATH_INFO and PATH_TRANSLATED environment variables.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Script PUT /cgi-bin/script</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * will activate /cgi-bin/script when a request is received with the</b></font>
+<font color="#00ffff"><b> * HTTP method &quot;PUT&quot;.  The available method names are defined in httpd.h.</b></font>
+<font color="#00ffff"><b> * If the method is GET, the script will only be activated if the requested</b></font>
+<font color="#00ffff"><b> * URI includes query information (stuff after a ?-mark).</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+
+
+
+
+
+
+
+
+
+
+
+
+        <font color="#ffff00"><b>if</b></font> (!data) <span style="background-color: #ff6060"><font color="#ffffff"><b>{</b></font></span>
+            <font color="#00ff00"><b>char</b></font> *exp_time = <font color="#ff40ff"><b>NULL</b></font>;
+
+            expires = apr_strtok(<font color="#ff40ff"><b>NULL</b></font>, <font color="#ff40ff"><b>&quot;:&quot;</b></font>, &amp;tok_cntx);
+            path = expires ? apr_strtok(<font color="#ff40ff"><b>NULL</b></font>, <font color="#ff40ff"><b>&quot;:&quot;</b></font>, &amp;tok_cntx) : <font color="#ff40ff"><b>NULL</b></font>;
+
+            <font color="#ffff00"><b>if</b></font> (expires) <span style="background-color: #ff6060"><font color="#ffffff"><b>{</b></font></span>
+                apr_time_exp_t tms;
+                apr_time_exp_gmt(&amp;tms, r-&gt;request_time
+                                     + apr_time_from_sec((<font color="#ff40ff"><b>60</b></font> * atol(expires))));
+                exp_time = apr_psprintf(r-&gt;pool, <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b>, </b></font><font color="#ff6060"><b>%.2d</b></font><font color="#ff40ff"><b>-</b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b>-</b></font><font color="#ff6060"><b>%.4d</b></font><font color="#ff40ff"><b> &quot;</b></font>
+                                                 <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>%.2d</b></font><font color="#ff40ff"><b>:</b></font><font color="#ff6060"><b>%.2d</b></font><font color="#ff40ff"><b>:</b></font><font color="#ff6060"><b>%.2d</b></font><font color="#ff40ff"><b> GMT&quot;</b></font>,
+                                        apr_day_snames[tms.tm_wday],
+                                        tms.tm_mday,
+                                        apr_month_snames[tms.tm_mon],
+                                        tms.tm_year+<font color="#ff40ff"><b>1900</b></font>,
+                                        tms.tm_hour, tms.tm_min, tms.tm_sec);
+            <span style="background-color: #ff6060"><font color="#ffffff"><b>}</b></font></span>
+
+            cookie = apr_pstrcat(rmain-&gt;pool,
+                                 var, <font color="#ff40ff"><b>&quot;=&quot;</b></font>, val,
+                                 <font color="#ff40ff"><b>&quot;; path=&quot;</b></font>, path ? path : <font color="#ff40ff"><b>&quot;/&quot;</b></font>,
+                                 <font color="#ff40ff"><b>&quot;; domain=&quot;</b></font>, domain,
+                                 expires ? <font color="#ff40ff"><b>&quot;; expires=&quot;</b></font> : <font color="#ff40ff"><b>NULL</b></font>,
+                                 expires ? exp_time : <font color="#ff40ff"><b>NULL</b></font>,
+                                 <font color="#ff40ff"><b>NULL</b></font>);
+
+            apr_table_addn(rmain-&gt;err_headers_out, <font color="#ff40ff"><b>&quot;Set-Cookie&quot;</b></font>, cookie);
+            apr_pool_userdata_set(<font color="#ff40ff"><b>&quot;set&quot;</b></font>, notename, <font color="#ff40ff"><b>NULL</b></font>, rmain-&gt;pool);
+            rewritelog((rmain, <font color="#ff40ff"><b>5</b></font>, <font color="#ff40ff"><b>NULL</b></font>, <font color="#ff40ff"><b>&quot;setting cookie '</b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b>'&quot;</b></font>, cookie));
+        <span style="background-color: #ff6060"><font color="#ffffff"><b>}</b></font></span>
+        <font color="#ffff00"><b>else</b></font> <span style="background-color: #ff6060"><font color="#ffffff"><b>{</b></font></span>
+            rewritelog((rmain, <font color="#ff40ff"><b>5</b></font>, <font color="#ff40ff"><b>NULL</b></font>, <font color="#ff40ff"><b>&quot;skipping already set cookie '</b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b>'&quot;</b></font>,
+                        var));
+        <span style="background-color: #ff6060"><font color="#ffffff"><b>}</b></font></span>
+    <span style="background-color: #ff6060"><font color="#ffffff"><b>}</b></font></span>
+
+
+
+
+
+rewriteloglevel
+rewritelogfile
+REWRITELOGFP
+REWRITEMAPS
+REWRITECONDS
+REWRITERULES
+REWRITELOCK
+REWRITEBASE
+MaxRedirects=
+
+
+
+                        <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'f'</b></font>: newcond-&gt;ptype = CONDPAT_FILE_EXISTS; <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'s'</b></font>: newcond-&gt;ptype = CONDPAT_FILE_SIZE;   <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'l'</b></font>: newcond-&gt;ptype = CONDPAT_FILE_LINK;   <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'d'</b></font>: newcond-&gt;ptype = CONDPAT_FILE_DIR;    <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'x'</b></font>: newcond-&gt;ptype = CONDPAT_FILE_XBIT;   <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'U'</b></font>: newcond-&gt;ptype = CONDPAT_LU_URL;      <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'F'</b></font>: newcond-&gt;ptype = CONDPAT_LU_FILE;     <font color="#ffff00"><b>break</b></font>;
+                        <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'&gt;'</b></font>: newcond-&gt;ptype = CONDPAT_STR_GT; <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'&lt;'</b></font>: newcond-&gt;ptype = CONDPAT_STR_LT; <font color="#ffff00"><b>break</b></font>;
+            <font color="#ffff00"><b>case</b></font> <font color="#ff40ff"><b>'='</b></font>: newcond-&gt;ptype = CONDPAT_STR_EQ;
+                <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> &quot;&quot; represents an empty string </b></font><font color="#00ffff"><b>*/</b></font>
+
+                C CHAIN|COOKIE
+                E ENV
+                F FORBIDDEN
+                G GONE
+                H HANDLER
+                L LAST
+                N NOESCAPE|NEXT|NOSUBREQ|NOCASE
+                P PROXY|PASSTHROUGH
+                Q QSAPPEND
+                S SKIP
+                T TYPE
+                R REDIRECT (PERMANENT, TEMP, SEEOTHER)
+
+                <font color="#ffff00"><b>else</b></font> <font color="#ffff00"><b>if</b></font> (apr_isdigit(*val)) <span style="background-color: #ff6060"><font color="#ffffff"><b>{</b></font></span>
+                    status = atoi(val);
+                    <font color="#ffff00"><b>if</b></font> (status != HTTP_INTERNAL_SERVER_ERROR) <span style="background-color: #ff6060"><font color="#ffffff"><b>{</b></font></span>
+                        <font color="#00ff00"><b>int</b></font> idx =
+                            ap_index_of_response(HTTP_INTERNAL_SERVER_ERROR);
+
+                        <font color="#ffff00"><b>if</b></font> (ap_index_of_response(status) == idx) <span style="background-color: #ff6060"><font color="#ffffff"><b>{</b></font></span>
+                            <font color="#ffff00"><b>return</b></font> apr_psprintf(p, <font color="#ff40ff"><b>&quot;RewriteRule: invalid HTTP &quot;</b></font>
+                                                   <font color="#ff40ff"><b>&quot;response code '</b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b>' for &quot;</b></font>
+                                                   <font color="#ff40ff"><b>&quot;flag 'R'&quot;</b></font>,
+                                                val);
+
+
+
+               <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> arg3: optional flags field </b></font><font color="#00ffff"><b>*/</b></font>
+    newrule-&gt;forced_mimetype     = <font color="#ff40ff"><b>NULL</b></font>;
+    newrule-&gt;forced_handler      = <font color="#ff40ff"><b>NULL</b></font>;
+    newrule-&gt;forced_responsecode = HTTP_MOVED_TEMPORARILY;
+    newrule-&gt;flags  = RULEFLAG_NONE;
+    newrule-&gt;env = <font color="#ff40ff"><b>NULL</b></font>;
+    newrule-&gt;cookie = <font color="#ff40ff"><b>NULL</b></font>;
+    newrule-&gt;skip   = <font color="#ff40ff"><b>0</b></font>;
+
+
+<font color="#ffff00"><b>case</b></font> CONDPAT_LU_URL:
+        <font color="#ffff00"><b>if</b></font> (*input &amp;&amp; subreq_ok(r)) {
+            rsub = ap_sub_req_lookup_uri(input, r, <font color="#ff40ff"><b>NULL</b></font>);
+            <font color="#ffff00"><b>if</b></font> (rsub-&gt;status &lt; <font color="#ff40ff"><b>400</b></font>) {
+                rc = <font color="#ff40ff"><b>1</b></font>;
+            }
+            rewritelog((r, <font color="#ff40ff"><b>5</b></font>, <font color="#ff40ff"><b>NULL</b></font>, <font color="#ff40ff"><b>&quot;RewriteCond URI (-U) check: &quot;</b></font>
+                        <font color="#ff40ff"><b>&quot;path=</b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b> -&gt; status=</b></font><font color="#ff6060"><b>%d</b></font><font color="#ff40ff"><b>&quot;</b></font>, input, rsub-&gt;status));
+            ap_destroy_sub_req(rsub);
+        }
+        <font color="#ffff00"><b>break</b></font>;
+
+
+
+<font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b> * Apply a single RewriteRule</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>int</b></font> apply_rewrite_rule(rewriterule_entry *p, rewrite_ctx *ctx)
+{
+    ap_regmatch_t regmatch[AP_MAX_REG_MATCH];
+    apr_array_header_t *rewriteconds;
+    rewritecond_entry *conds;
+    <font color="#00ff00"><b>int</b></font> i, rc;
+    <font color="#00ff00"><b>char</b></font> *newuri = <font color="#ff40ff"><b>NULL</b></font>;
+    request_rec *r = ctx-&gt;r;
+    <font color="#00ff00"><b>int</b></font> is_proxyreq = <font color="#ff40ff"><b>0</b></font>;
+
+    ctx-&gt;uri = r-&gt;filename;
+
+    <font color="#ffff00"><b>if</b></font> (ctx-&gt;perdir) {
+        apr_size_t dirlen = strlen(ctx-&gt;perdir);
+
+        <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>         * Proxy request?</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        is_proxyreq = (   r-&gt;proxyreq &amp;&amp; r-&gt;filename
+                       &amp;&amp; !strncmp(r-&gt;filename, <font color="#ff40ff"><b>&quot;proxy:&quot;</b></font>, <font color="#ff40ff"><b>6</b></font>));
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Since we want to match against the (so called) full URL, we have</b></font>
+<font color="#00ffff"><b>         * to re-add the PATH_INFO postfix</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>if</b></font> (r-&gt;path_info &amp;&amp; *r-&gt;path_info) {
+            rewritelog((r, <font color="#ff40ff"><b>3</b></font>, ctx-&gt;perdir, <font color="#ff40ff"><b>&quot;add path info postfix: </b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b> -&gt; </b></font><font color="#ff6060"><b>%s%s</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                        ctx-&gt;uri, ctx-&gt;uri, r-&gt;path_info));
+            ctx-&gt;uri = apr_pstrcat(r-&gt;pool, ctx-&gt;uri, r-&gt;path_info, <font color="#ff40ff"><b>NULL</b></font>);
+        }
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Additionally we strip the physical path from the url to match</b></font>
+<font color="#00ffff"><b>         * it independent from the underlaying filesystem.</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>if</b></font> (!is_proxyreq &amp;&amp; strlen(ctx-&gt;uri) &gt;= dirlen &amp;&amp;
+            !strncmp(ctx-&gt;uri, ctx-&gt;perdir, dirlen)) {
+
+
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> expand [E=var:val] and [CO=&lt;cookie&gt;] </b></font><font color="#00ffff"><b>*/</b></font>
+    do_expand_env(p-&gt;env, ctx);
+    do_expand_cookie(p-&gt;cookie, ctx);
+
+
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> If this rule is explicitly forced for HTTP redirection</b></font>
+<font color="#00ffff"><b>     * (`RewriteRule .. .. [R]') then force an external HTTP</b></font>
+<font color="#00ffff"><b>     * redirect. But make sure it is a fully-qualified URL. (If</b></font>
+<font color="#00ffff"><b>     * not it is qualified with ourself).</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#ffff00"><b>if</b></font> (p-&gt;flags &amp; RULEFLAG_FORCEREDIRECT) {
+        fully_qualify_uri(r);
+
+        rewritelog((r, <font color="#ff40ff"><b>2</b></font>, ctx-&gt;perdir, <font color="#ff40ff"><b>&quot;explicitly forcing redirect with </b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b>&quot;</b></font>,
+                    r-&gt;filename));
+
+        r-&gt;status = p-&gt;forced_responsecode;
+        <font color="#ffff00"><b>return</b></font> <font color="#ff40ff"><b>1</b></font>;
+    }
+
+
+   <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>             * The rule sets the response code (implies match-only)</b></font>
+<font color="#00ffff"><b>             </b></font><font color="#00ffff"><b>*/</b></font>
+            <font color="#ffff00"><b>if</b></font> (p-&gt;flags &amp; RULEFLAG_STATUS) {
+                <font color="#ffff00"><b>return</b></font> ACTION_STATUS;
+            }
+
+
+    rewrite_ssl_lookup = APR_RETRIEVE_OPTIONAL_FN(ssl_var_lookup);
+    rewrite_is_https = APR_RETRIEVE_OPTIONAL_FN(ssl_is_https);
+
+
+
+
+
+
+
+    <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>     *  add the SCRIPT_URL variable to the env. this is a bit complicated</b></font>
+<font color="#00ffff"><b>     *  due to the fact that apache uses subrequests and internal redirects</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+
+    <font color="#ffff00"><b>if</b></font> (r-&gt;main == <font color="#ff40ff"><b>NULL</b></font>) {
+         var = apr_table_get(r-&gt;subprocess_env, REDIRECT_ENVVAR_SCRIPT_URL);
+         <font color="#ffff00"><b>if</b></font> (var == <font color="#ff40ff"><b>NULL</b></font>) {
+             apr_table_setn(r-&gt;subprocess_env, ENVVAR_SCRIPT_URL, r-&gt;uri);
+         }
+         <font color="#ffff00"><b>else</b></font> {
+             apr_table_setn(r-&gt;subprocess_env, ENVVAR_SCRIPT_URL, var);
+         }
+    }
+    <font color="#ffff00"><b>else</b></font> {
+         var = apr_table_get(r-&gt;main-&gt;subprocess_env, ENVVAR_SCRIPT_URL);
+         apr_table_setn(r-&gt;subprocess_env, ENVVAR_SCRIPT_URL, var);
+    }
+
+    <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>     *  create the SCRIPT_URI variable for the env</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> add the canonical URI of this URL </b></font><font color="#00ffff"><b>*/</b></font>
+    thisserver = ap_get_server_name(r);
+    port = ap_get_server_port(r);
+    <font color="#ffff00"><b>if</b></font> (ap_is_default_port(port, r)) {
+        thisport = <font color="#ff40ff"><b>&quot;&quot;</b></font>;
+    }
+    <font color="#ffff00"><b>else</b></font> {
+        thisport = apr_psprintf(r-&gt;pool, <font color="#ff40ff"><b>&quot;:</b></font><font color="#ff6060"><b>%u</b></font><font color="#ff40ff"><b>&quot;</b></font>, port);
+    }
+    thisurl = apr_table_get(r-&gt;subprocess_env, ENVVAR_SCRIPT_URL);
+
+
+
+
+            <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> now do the redirection </b></font><font color="#00ffff"><b>*/</b></font>
+            apr_table_setn(r-&gt;headers_out, <font color="#ff40ff"><b>&quot;Location&quot;</b></font>, r-&gt;filename);
+            rewritelog((r, <font color="#ff40ff"><b>1</b></font>, <font color="#ff40ff"><b>NULL</b></font>, <font color="#ff40ff"><b>&quot;redirect to </b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b> [REDIRECT/</b></font><font color="#ff6060"><b>%d</b></font><font color="#ff40ff"><b>]&quot;</b></font>, r-&gt;filename,
+                        n));
+
+            <font color="#ffff00"><b>return</b></font> n;
+
+
+
+
+
+
+
+    <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>     *  Do the Options check after engine check, so</b></font>
+<font color="#00ffff"><b>     *  the user is able to explicitely turn RewriteEngine Off.</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#ffff00"><b>if</b></font> (!(ap_allow_options(r) &amp; (OPT_SYM_LINKS | OPT_SYM_OWNER))) {
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> FollowSymLinks is mandatory! </b></font><font color="#00ffff"><b>*/</b></font>
+        ap_log_rerror(APLOG_MARK, APLOG_ERR, <font color="#ff40ff"><b>0</b></font>, r,
+                     <font color="#ff40ff"><b>&quot;Options FollowSymLinks or SymLinksIfOwnerMatch is off &quot;</b></font>
+                     <font color="#ff40ff"><b>&quot;which implies that RewriteRule directive is forbidden: &quot;</b></font>
+                     <font color="#ff40ff"><b>&quot;</b></font><font color="#ff6060"><b>%s</b></font><font color="#ff40ff"><b>&quot;</b></font>, r-&gt;filename);
+        <font color="#ffff00"><b>return</b></font> HTTP_FORBIDDEN;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        bodyoff = bodyread = apr_palloc(r-&gt;pool, bodybuf);
+
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> only while we have enough for a chunked header </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>while</b></font> ((!bodylen || bodybuf &gt;= <font color="#ff40ff"><b>32</b></font>) &amp;&amp;
+               (res = ap_get_client_block(r, bodyoff, bodybuf)) &gt; <font color="#ff40ff"><b>0</b></font>) {
+            bodylen += res;
+            bodybuf -= res;
+            bodyoff += res;
+        }
+        <font color="#ffff00"><b>if</b></font> (res &gt; <font color="#ff40ff"><b>0</b></font> &amp;&amp; bodybuf &lt; <font color="#ff40ff"><b>32</b></font>) {
+            <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> discard_rest_of_request_body into our buffer </b></font><font color="#00ffff"><b>*/</b></font>
+            <font color="#ffff00"><b>while</b></font> (ap_get_client_block(r, bodyread, bodylen) &gt; <font color="#ff40ff"><b>0</b></font>)
+                ;
+            apr_table_setn(r-&gt;notes, <font color="#ff40ff"><b>&quot;error-notes&quot;</b></font>,
+                   <font color="#ff40ff"><b>&quot;Extended TRACE request bodies cannot exceed 64k</b></font><font color="#ff6060"><b>\n</b></font><font color="#ff40ff"><b>&quot;</b></font>);
+            <font color="#ffff00"><b>return</b></font> HTTP_REQUEST_ENTITY_TOO_LARGE;
+        }
+
+        <font color="#ffff00"><b>if</b></font> (res &lt; <font color="#ff40ff"><b>0</b></font>) {
+            <font color="#ffff00"><b>return</b></font> HTTP_BAD_REQUEST;
+        }
+    }
+
+    ap_set_content_type(r, <font color="#ff40ff"><b>&quot;message/http&quot;</b></font>);
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Now we recreate the request, and echo it back </b></font><font color="#00ffff"><b>*/</b></font>
+
+    bb = apr_brigade_create(r-&gt;pool, r-&gt;connection-&gt;bucket_alloc);
+    apr_brigade_putstrs(bb, <font color="#ff40ff"><b>NULL</b></font>, <font color="#ff40ff"><b>NULL</b></font>, r-&gt;the_request, CRLF, <font color="#ff40ff"><b>NULL</b></font>);
+    h.pool = r-&gt;pool;
+
+
+
+
+    <font color="#ffff00"><b>if</b></font> (r-&gt;status == HTTP_NOT_MODIFIED) {
+        apr_table_do((<font color="#00ff00"><b>int</b></font> (*)(<font color="#00ff00"><b>void</b></font> *, <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *, <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *)) form_header_field,
+                     (<font color="#00ff00"><b>void</b></font> *) &amp;h, r-&gt;headers_out,
+                     <font color="#ff40ff"><b>&quot;Connection&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Keep-Alive&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;ETag&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Content-Location&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Expires&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Cache-Control&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Vary&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Warning&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;WWW-Authenticate&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Proxy-Authenticate&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Set-Cookie&quot;</b></font>,
+                     <font color="#ff40ff"><b>&quot;Set-Cookie2&quot;</b></font>,
+                     <font color="#ff40ff"><b>NULL</b></font>);
+
+
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Here we deal with getting the request message body from the client.</b></font>
+<font color="#00ffff"><b> * Whether or not the request contains a body is signaled by the presence</b></font>
+<font color="#00ffff"><b> * of a non-zero Content-Length or by a Transfer-Encoding: chunked.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * Note that this is more complicated than it was in Apache 1.1 and prior</b></font>
+<font color="#00ffff"><b> * versions, because chunked support means that the module does less.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * The proper procedure is this:</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * 1. Call ap_setup_client_block() near the beginning of the request</b></font>
+<font color="#00ffff"><b> *    handler. This will set up all the necessary properties, and will</b></font>
+<font color="#00ffff"><b> *    return either OK, or an error code. If the latter, the module should</b></font>
+<font color="#00ffff"><b> *    return that error code. The second parameter selects the policy to</b></font>
+<font color="#00ffff"><b> *    apply if the request message indicates a body, and how a chunked</b></font>
+<font color="#00ffff"><b> *    transfer-coding should be interpreted. Choose one of</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> *    REQUEST_NO_BODY          Send 413 error if message has any body</b></font>
+<font color="#00ffff"><b> *    REQUEST_CHUNKED_ERROR    Send 411 error if body without Content-Length</b></font>
+<font color="#00ffff"><b> *    REQUEST_CHUNKED_DECHUNK  If chunked, remove the chunks for me.</b></font>
+<font color="#00ffff"><b> *    REQUEST_CHUNKED_PASS     If chunked, pass the chunk headers with body.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> *    In order to use the last two options, the caller MUST provide a buffer</b></font>
+<font color="#00ffff"><b> *    large enough to hold a chunk-size line, including any extensions.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * 2. When you are ready to read a body (if any), call ap_should_client_block().</b></font>
+<font color="#00ffff"><b> *    This will tell the module whether or not to read input. If it is 0,</b></font>
+<font color="#00ffff"><b> *    the module should assume that there is no message body to read.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> * 3. Finally, call ap_get_client_block in a loop. Pass it a buffer and its size.</b></font>
+<font color="#00ffff"><b> *    It will put data into the buffer (not necessarily a full buffer), and</b></font>
+<font color="#00ffff"><b> *    return the length of the input block. When it is done reading, it will</b></font>
+<font color="#00ffff"><b> *    return 0 if EOF, or -1 if there was an error.</b></font>
+<font color="#00ffff"><b> *    If an error occurs on input, we force an end to keepalive.</b></font>
+<font color="#00ffff"><b> *</b></font>
+<font color="#00ffff"><b> *    This step also sends a 100 Continue response to HTTP/1.1 clients if appropriate.</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+
+
+
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> The following convoluted conditional determines whether or not</b></font>
+<font color="#00ffff"><b>     * the current connection should remain persistent after this response</b></font>
+<font color="#00ffff"><b>     * (a.k.a. HTTP Keep-Alive) and whether or not the output message</b></font>
+<font color="#00ffff"><b>     * body should use the HTTP/1.1 chunked transfer-coding.  In English,</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     *   IF  we have not marked this connection as errored;</b></font>
+<font color="#00ffff"><b>     *   and the response body has a defined length due to the status code</b></font>
+<font color="#00ffff"><b>     *       being 304 or 204, the request method being HEAD, already</b></font>
+<font color="#00ffff"><b>     *       having defined Content-Length or Transfer-Encoding: chunked, or</b></font>
+<font color="#00ffff"><b>     *       the request version being HTTP/1.1 and thus capable of being set</b></font>
+<font color="#00ffff"><b>     *       as chunked [we know the (r-&gt;chunked = 1) side-effect is ugly];</b></font>
+<font color="#00ffff"><b>     *   and the server configuration enables keep-alive;</b></font>
+<font color="#00ffff"><b>     *   and the server configuration has a reasonable inter-request timeout;</b></font>
+<font color="#00ffff"><b>     *   and there is no maximum # requests or the max hasn't been reached;</b></font>
+<font color="#00ffff"><b>     *   and the response status does not require a close;</b></font>
+<font color="#00ffff"><b>     *   and the response generator has not already indicated close;</b></font>
+<font color="#00ffff"><b>     *   and the client did not request non-persistence (Connection: close);</b></font>
+<font color="#00ffff"><b>     *   and    we haven't been configured to ignore the buggy twit</b></font>
+<font color="#00ffff"><b>     *       or they're a buggy twit coming through a HTTP/1.1 proxy</b></font>
+<font color="#00ffff"><b>     *   and    the client is requesting an HTTP/1.0-style keep-alive</b></font>
+<font color="#00ffff"><b>     *       or the client claims to be HTTP/1.1 compliant (perhaps a proxy);</b></font>
+<font color="#00ffff"><b>     *   THEN we can be persistent, which requires more headers be output.</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     * Note that the condition evaluation order is extremely important.</b></font>
+
+
+<font color="#00ffff"><b>AP_DECLARE(int) ap_meets_conditions(request_rec *r)</b></font>
+<font color="#00ffff"><b>{</b></font>
+<font color="#00ffff"><b>    const char *etag;</b></font>
+<font color="#00ffff"><b>    const char *if_match, *if_modified_since, *if_unmodified, *if_nonematch;</b></font>
+<font color="#00ffff"><b>    apr_time_t tmp_time;</b></font>
+<font color="#00ffff"><b>    apr_int64_t mtime;</b></font>
+<font color="#00ffff"><b>    int not_modified = 0;</b></font>
+
+<font color="#00ffff"><b>    </b></font><span style="background-color: #ff6060"><font color="#ffffff"><b>/</b></font></span><font color="#00ffff"><b>* Check for conditional requests --- note that we only want to do</b></font>
+<font color="#00ffff"><b>     * this if we are successful so far and we are not processing a</b></font>
+<font color="#00ffff"><b>     * subrequest or an ErrorDocument.</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     * The order of the checks is important, since ETag checks are supposed</b></font>
+<font color="#00ffff"><b>     * to be more accurate than checks relative to the modification time.</b></font>
+<font color="#00ffff"><b>     * However, not all documents are guaranteed to *have* ETags, and some</b></font>
+<font color="#00ffff"><b>     * might have Last-Modified values w/o ETags, so this gets a little</b></font>
+<font color="#00ffff"><b>     * complicated.</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+
+    <font color="#ffff00"><b>if</b></font> (!ap_is_HTTP_SUCCESS(r-&gt;status) || r-&gt;no_local_copy) {
+        <font color="#ffff00"><b>return</b></font> OK;
+    }
+
+    etag = apr_table_get(r-&gt;headers_out, <font color="#ff40ff"><b>&quot;ETag&quot;</b></font>);
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> All of our comparisons must be in seconds, because that's the</b></font>
+<font color="#00ffff"><b>     * highest time resolution the HTTP specification allows.</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> </b></font><span style="background-color: #ffff00"><font color="#808080">XXX</font></span><font color="#00ffff"><b>: we should define a &quot;time unset&quot; constant </b></font><font color="#00ffff"><b>*/</b></font>
+    tmp_time = ((r-&gt;mtime != <font color="#ff40ff"><b>0</b></font>) ? r-&gt;mtime : apr_time_now());
+    mtime =  apr_time_sec(tmp_time);
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> If an If-Match request-header field was given</b></font>
+<font color="#00ffff"><b>     * AND the field value is not &quot;*&quot; (meaning match anything)</b></font>
+<font color="#00ffff"><b>     * AND if our strong ETag does not match any entity tag in that field,</b></font>
+<font color="#00ffff"><b>     *     respond with a status of 412 (Precondition Failed).</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#ffff00"><b>if</b></font> ((if_match = apr_table_get(r-&gt;headers_in, <font color="#ff40ff"><b>&quot;If-Match&quot;</b></font>)) != <font color="#ff40ff"><b>NULL</b></font>) {
+        <font color="#ffff00"><b>if</b></font> (if_match[<font color="#ff40ff"><b>0</b></font>] != <font color="#ff40ff"><b>'*'</b></font>
+            &amp;&amp; (etag == <font color="#ff40ff"><b>NULL</b></font> || etag[<font color="#ff40ff"><b>0</b></font>] == <font color="#ff40ff"><b>'W'</b></font>
+                || !ap_find_list_item(r-&gt;pool, if_match, etag))) {
+            <font color="#ffff00"><b>return</b></font> HTTP_PRECONDITION_FAILED;
+        }
+    }
+    <font color="#ffff00"><b>else</b></font> {
+        <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Else if a valid If-Unmodified-Since request-header field was given</b></font>
+<font color="#00ffff"><b>         * AND the requested resource has been modified since the time</b></font>
+<font color="#00ffff"><b>         * specified in this field, then the server MUST</b></font>
+<font color="#00ffff"><b>         *     respond with a status of 412 (Precondition Failed).</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        if_unmodified = apr_table_get(r-&gt;headers_in, <font color="#ff40ff"><b>&quot;If-Unmodified-Since&quot;</b></font>);
+        <font color="#ffff00"><b>if</b></font> (if_unmodified != <font color="#ff40ff"><b>NULL</b></font>) {
+            apr_time_t ius = apr_date_parse_http(if_unmodified);
+
+            <font color="#ffff00"><b>if</b></font> ((ius != APR_DATE_BAD) &amp;&amp; (mtime &gt; apr_time_sec(ius))) {
+                <font color="#ffff00"><b>return</b></font> HTTP_PRECONDITION_FAILED;
+            }
+        }
+    }
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> If an If-None-Match request-header field was given</b></font>
+<font color="#00ffff"><b>     * AND the field value is &quot;*&quot; (meaning match anything)</b></font>
+<font color="#00ffff"><b>     *     OR our ETag matches any of the entity tags in that field, fail.</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     * If the request method was GET or HEAD, failure means the server</b></font>
+<font color="#00ffff"><b>     *    SHOULD respond with a 304 (Not Modified) response.</b></font>
+<font color="#00ffff"><b>     * For all other request methods, failure means the server MUST</b></font>
+<font color="#00ffff"><b>     *    respond with a status of 412 (Precondition Failed).</b></font>
+<font color="#00ffff"><b>     *</b></font>
+<font color="#00ffff"><b>     * GET or HEAD allow weak etag comparison, all other methods require</b></font>
+<font color="#00ffff"><b>     * strong comparison.  We can only use weak if it's not a range request.</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+    if_nonematch = apr_table_get(r-&gt;headers_in, <font color="#ff40ff"><b>&quot;If-None-Match&quot;</b></font>);
+    <font color="#ffff00"><b>if</b></font> (if_nonematch != <font color="#ff40ff"><b>NULL</b></font>) {
+        <font color="#ffff00"><b>if</b></font> (r-&gt;method_number == M_GET) {
+            <font color="#ffff00"><b>if</b></font> (if_nonematch[<font color="#ff40ff"><b>0</b></font>] == <font color="#ff40ff"><b>'*'</b></font>) {
+                not_modified = <font color="#ff40ff"><b>1</b></font>;
+            }
+
+
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> Build the Allow field-value from the request handler method mask.</b></font>
+<font color="#00ffff"><b> * Note that we always allow TRACE, since it is handled below.</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+<font color="#00ff00"><b>static</b></font> <font color="#00ff00"><b>char</b></font> *make_allow(request_rec *r)
+{
+    <font color="#00ff00"><b>char</b></font> *list;
+    apr_int64_t mask;
+    apr_array_header_t *allow = apr_array_make(r-&gt;pool, <font color="#ff40ff"><b>10</b></font>, <font color="#ffff00"><b>sizeof</b></font>(<font color="#00ff00"><b>char</b></font> *));
+    apr_hash_index_t *hi = apr_hash_first(r-&gt;pool, methods_registry);
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> For TRACE below </b></font><font color="#00ffff"><b>*/</b></font>
+    core_server_config *conf =
+        ap_get_module_config(r-&gt;server-&gt;module_config, &amp;core_module);
+
+    mask = r-&gt;allowed_methods-&gt;method_mask;
+
+    <font color="#ffff00"><b>for</b></font> (; hi; hi = apr_hash_next(hi)) {
+        <font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>void</b></font> *key;
+        <font color="#00ff00"><b>void</b></font> *val;
+
+        apr_hash_this(hi, &amp;key, <font color="#ff40ff"><b>NULL</b></font>, &amp;val);
+        <font color="#ffff00"><b>if</b></font> ((mask &amp; (AP_METHOD_BIT &lt;&lt; *(<font color="#00ff00"><b>int</b></font> *)val)) != <font color="#ff40ff"><b>0</b></font>) {
+            *(<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> **)apr_array_push(allow) = key;
+
+            <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> the M_GET method actually refers to two methods </b></font><font color="#00ffff"><b>*/</b></font>
+            <font color="#ffff00"><b>if</b></font> (*(<font color="#00ff00"><b>int</b></font> *)val == M_GET)
+                *(<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> **)apr_array_push(allow) = <font color="#ff40ff"><b>&quot;HEAD&quot;</b></font>;
+        }
+    }
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> TRACE is tested on a per-server basis </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#ffff00"><b>if</b></font> (conf-&gt;trace_enable != AP_TRACE_DISABLE)
+        *(<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> **)apr_array_push(allow) = <font color="#ff40ff"><b>&quot;TRACE&quot;</b></font>;
+
+    list = apr_array_pstrcat(r-&gt;pool, allow, <font color="#ff40ff"><b>','</b></font>);
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> ### this is rather annoying. we should enforce registration of</b></font>
+<font color="#00ffff"><b>       ### these methods </b></font><font color="#00ffff"><b>*/</b></font>
+    <font color="#ffff00"><b>if</b></font> ((mask &amp; (AP_METHOD_BIT &lt;&lt; M_INVALID))
+        &amp;&amp; (r-&gt;allowed_methods-&gt;method_list != <font color="#ff40ff"><b>NULL</b></font>)
+        &amp;&amp; (r-&gt;allowed_methods-&gt;method_list-&gt;nelts != <font color="#ff40ff"><b>0</b></font>)) {
+        <font color="#00ff00"><b>int</b></font> i;
+        <font color="#00ff00"><b>char</b></font> **xmethod = (<font color="#00ff00"><b>char</b></font> **) r-&gt;allowed_methods-&gt;method_list-&gt;elts;
+
+        <font color="#00ffff"><b>/*</b></font>
+<font color="#00ffff"><b>         * Append all of the elements of r-&gt;allowed_methods-&gt;method_list</b></font>
+<font color="#00ffff"><b>         </b></font><font color="#00ffff"><b>*/</b></font>
+        <font color="#ffff00"><b>for</b></font> (i = <font color="#ff40ff"><b>0</b></font>; i &lt; r-&gt;allowed_methods-&gt;method_list-&gt;nelts; ++i) {
+            list = apr_pstrcat(r-&gt;pool, list, <font color="#ff40ff"><b>&quot;,&quot;</b></font>, xmethod[i], <font color="#ff40ff"><b>NULL</b></font>);
+        }
+    }
+
+    <font color="#ffff00"><b>return</b></font> list;
+}
+
+AP_DECLARE(<font color="#00ff00"><b>int</b></font>) ap_send_http_options(request_rec *r)
+{
+    <font color="#ffff00"><b>if</b></font> (r-&gt;assbackwards) {
+        <font color="#ffff00"><b>return</b></font> DECLINED;
+    }
+
+    apr_table_setn(r-&gt;headers_out, <font color="#ff40ff"><b>&quot;Allow&quot;</b></font>, make_allow(r));
+
+    <font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b> the request finalization will send an EOS, which will flush all</b></font>
+<font color="#00ffff"><b>     * the headers out (including the Allow header)</b></font>
+<font color="#00ffff"><b>     </b></font><font color="#00ffff"><b>*/</b></font>
+
+    <font color="#ffff00"><b>return</b></font> OK;
+}
+
+
+
+
+
+
+
+<font color="#00ffff"><b>/*</b></font><font color="#00ffff"><b>*</b></font>
+<font color="#00ffff"><b> * Get the server banner in a form suitable for sending over the</b></font>
+<font color="#00ffff"><b> * network, with the level of information controlled by the</b></font>
+<font color="#00ffff"><b> * ServerTokens directive.</b></font>
+<font color="#00ffff"><b> * @return The server banner</b></font>
+<font color="#00ffff"><b> </b></font><font color="#00ffff"><b>*/</b></font>
+AP_DECLARE(<font color="#00ff00"><b>const</b></font> <font color="#00ff00"><b>char</b></font> *) ap_get_server_banner(<font color="#00ff00"><b>void</b></font>);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</body>
+</html>

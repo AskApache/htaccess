@@ -1,0 +1,1289 @@
+<html>
+<head>
+<title>DreamHost httpd.conf</title>
+<meta name="Generator" content="Vim/6.3">
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+</head>
+<body bgcolor="#000000" text="#ffffff">
+<pre>
+<font color="#00ffff">##</font>
+<font color="#00ffff">## httpd.conf -- Apache HTTP server configuration file</font>
+<font color="#00ffff">##</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Based upon the NCSA server configuration files originally by Rob McCool.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># This is the main Apache server configuration file.  It contains the</font>
+<font color="#00ffff"># configuration directives that give the server its instructions.</font>
+<font color="#00ffff"># See &lt;URL:<A HREF="http://httpd.apache.org/docs/">http://httpd.apache.org/docs/</A>&gt; for detailed information about</font>
+<font color="#00ffff"># the directives.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Do </font><span style="background-color: #ffff00"><font color="#808080">NOT</font></span><font color="#00ffff"> simply read the instructions in here without understanding</font>
+<font color="#00ffff"># what they do.  They're here only as hints or reminders.  If you are unsure</font>
+<font color="#00ffff"># consult the online docs. You have been warned.  </font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># After this file is processed, the server will look for and process</font>
+<font color="#00ffff"># /usr/local/dh/apache/template/etc/srm.conf and then /usr/local/dh/apache/template/etc/access.conf</font>
+<font color="#00ffff"># unless you have overridden these with ResourceConfig and/or</font>
+<font color="#00ffff"># AccessConfig directives here.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The configuration directives are grouped into three basic sections:</font>
+<font color="#00ffff">#  1. Directives that control the operation of the Apache server process as a</font>
+<font color="#00ffff">#     whole (the 'global environment').</font>
+<font color="#00ffff">#  2. Directives that define the parameters of the 'main' or 'default' server,</font>
+<font color="#00ffff">#     which responds to requests that aren't handled by a virtual host.</font>
+<font color="#00ffff">#     These directives also provide default values for the settings</font>
+<font color="#00ffff">#     of all virtual hosts.</font>
+<font color="#00ffff">#  3. Settings for virtual hosts, which allow Web requests to be sent to</font>
+<font color="#00ffff">#     different IP addresses or hostnames and have them handled by the</font>
+<font color="#00ffff">#     same Apache server process.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Configuration and logfile names: If the filenames you specify for many</font>
+<font color="#00ffff"># of the server's control files begin with &quot;/&quot; (or &quot;drive:/&quot; for Win32), the</font>
+<font color="#00ffff"># server will use that explicit path.  If the filenames do *not* begin</font>
+<font color="#00ffff"># with &quot;/&quot;, the value of ServerRoot is prepended -- so &quot;logs/foo.log&quot;</font>
+<font color="#00ffff"># with ServerRoot set to &quot;/usr/local/apache&quot; will be interpreted by the</font>
+<font color="#00ffff"># server as &quot;/usr/local/apache/logs/foo.log&quot;.</font>
+<font color="#00ffff">#</font>
+
+<font color="#00ffff">### Section 1: Global Environment</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The directives in this section affect the overall operation of Apache,</font>
+<font color="#00ffff"># such as the number of concurrent requests it can handle or where it</font>
+<font color="#00ffff"># can find its configuration files.</font>
+<font color="#00ffff">#</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># ServerType is either inetd, or standalone.  Inetd mode is only supported on</font>
+<font color="#00ffff"># Unix platforms.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>ServerType</b></font> <font color="#ff40ff"><b>standalone</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># ServerRoot: The top of the directory tree under which the server's</font>
+<font color="#00ffff"># configuration, error, and log files are kept.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># NOTE!  If you intend to place this on an NFS (or otherwise network)</font>
+<font color="#00ffff"># mounted filesystem then please read the LockFile documentation</font>
+<font color="#00ffff"># (available at &lt;URL:<A HREF="http://www.apache.org/docs/mod/core.html#lockfile">http://www.apache.org/docs/mod/core.html#lockfile</A>&gt;);</font>
+<font color="#00ffff"># you will save yourself a lot of trouble.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>ServerRoot</b></font> <font color="#ff40ff"><b>&quot;/usr/local/dh/apache/template&quot;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The LockFile directive sets the path to the lockfile used when Apache</font>
+<font color="#00ffff"># is compiled with either USE_FCNTL_SERIALIZED_ACCEPT or</font>
+<font color="#00ffff"># USE_FLOCK_SERIALIZED_ACCEPT. This directive should normally be left at</font>
+<font color="#00ffff"># its default value. The main reason for changing it is if the logs</font>
+<font color="#00ffff"># directory is NFS mounted, since the lockfile MUST BE STORED ON A LOCAL</font>
+<font color="#00ffff"># DISK. The PID of the main server process is automatically appended to</font>
+<font color="#00ffff"># the filename. </font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#LockFile /usr/local/dh/apache/logs/httpd.lock</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># PidFile: The file in which the server should record its process</font>
+<font color="#00ffff"># identification number when it starts.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>PidFile</b></font> /usr/local/dh/apache/logs/httpd.pid
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># ScoreBoardFile: File used to store internal server process information.</font>
+<font color="#00ffff"># Not all architectures require this.  But if yours does (you'll know because</font>
+<font color="#00ffff"># this file will be  created when you run Apache) then you *must* ensure that</font>
+<font color="#00ffff"># no two invocations of Apache share the same scoreboard file.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>ScoreBoardFile</b></font> /usr/local/dh/apache/logs/httpd.scoreboard
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># In the standard configuration, the server will process httpd.conf (this </font>
+<font color="#00ffff"># file, specified by the -f command line option), srm.conf, and access.conf </font>
+<font color="#00ffff"># in that order.  The latter two files are now distributed empty, as it is </font>
+<font color="#00ffff"># recommended that all directives be kept in a single file for simplicity.  </font>
+<font color="#00ffff"># The commented-out values below are the built-in defaults.  You can have the </font>
+<font color="#00ffff"># server ignore these files altogether by using &quot;/dev/null&quot; (for Unix) or</font>
+<font color="#00ffff"># &quot;nul&quot; (for Win32) for the arguments to the directives.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#ResourceConfig /usr/local/dh/apache/template/etc/srm.conf</font>
+<font color="#00ffff">#AccessConfig /usr/local/dh/apache/template/etc/access.conf</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Timeout: The number of seconds before receives and sends time out.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>Timeout</b></font> 300
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># KeepAlive: Whether or not to allow persistent connections (more than</font>
+<font color="#00ffff"># one request per connection). Set to &quot;Off&quot; to deactivate.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>KeepAlive</b></font> <font color="#ff40ff"><b>On</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># MaxKeepAliveRequests: The maximum number of requests to allow</font>
+<font color="#00ffff"># during a persistent connection. Set to 0 to allow an unlimited amount.</font>
+<font color="#00ffff"># We recommend you leave this number high, for maximum performance.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>MaxKeepAliveRequests</b></font> 100
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># KeepAliveTimeout: Number of seconds to wait for the next request from the</font>
+<font color="#00ffff"># same client on the same connection.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>KeepAliveTimeout</b></font> 15
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Server-pool size regulation.  Rather than making you guess how many</font>
+<font color="#00ffff"># server processes you need, Apache dynamically adapts to the load it</font>
+<font color="#00ffff"># sees --- that is, it tries to maintain enough server processes to</font>
+<font color="#00ffff"># handle the current load, plus a few spare servers to handle transient</font>
+<font color="#00ffff"># load spikes (e.g., multiple simultaneous requests from a single</font>
+<font color="#00ffff"># Netscape browser).</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># It does this by periodically checking how many servers are waiting</font>
+<font color="#00ffff"># for a request.  If there are fewer than MinSpareServers, it creates</font>
+<font color="#00ffff"># a new spare.  If there are more than MaxSpareServers, some of the</font>
+<font color="#00ffff"># spares die off.  The default values are probably OK for most sites.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>MinSpareServers</b></font> 5
+<font color="#ffffff"><b>MaxSpareServers</b></font> 10
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Number of servers to start initially --- should be a reasonable ballpark</font>
+<font color="#00ffff"># figure.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>StartServers</b></font> 5
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Limit on total number of servers running, i.e., limit on the number</font>
+<font color="#00ffff"># of clients who can simultaneously connect --- if this limit is ever</font>
+<font color="#00ffff"># reached, clients will be LOCKED OUT, so it should </font><span style="background-color: #ffff00"><font color="#808080">NOT</font></span><font color="#00ffff"> BE SET TOO LOW.</font>
+<font color="#00ffff"># It is intended mainly as a brake to keep a runaway server from taking</font>
+<font color="#00ffff"># the system with it as it spirals down...</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>MaxClients</b></font> 150
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># MaxRequestsPerChild: the number of requests each child process is</font>
+<font color="#00ffff"># allowed to process before the child dies.  The child will exit so</font>
+<font color="#00ffff"># as to avoid problems after prolonged use when Apache (and maybe the</font>
+<font color="#00ffff"># libraries it uses) leak memory or other resources.  On most systems, this</font>
+<font color="#00ffff"># isn't really needed, but a few (such as Solaris) do have notable leaks</font>
+<font color="#00ffff"># in the libraries. For these platforms, set to something like 10000</font>
+<font color="#00ffff"># or so; a setting of 0 means unlimited.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># NOTE: This value does not include keepalive requests after the initial</font>
+<font color="#00ffff">#       request per connection. For example, if a child process handles</font>
+<font color="#00ffff">#       an initial request and 10 subsequent &quot;keptalive&quot; requests, it</font>
+<font color="#00ffff">#       would only count as 1 request towards this limit.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>MaxRequestsPerChild</b></font> 0
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Listen: Allows you to bind Apache to specific IP addresses and/or</font>
+<font color="#00ffff"># ports, instead of the default. See also the &lt;VirtualHost&gt;</font>
+<font color="#00ffff"># directive.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#Listen 3000</font>
+<font color="#00ffff">#Listen 12.34.56.78:80</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># BindAddress: You can support virtual hosts with this option. This directive</font>
+<font color="#00ffff"># is used to tell the server which IP address to listen to. It can either</font>
+<font color="#00ffff"># contain &quot;*&quot;, an IP address, or a fully qualified Internet domain name.</font>
+<font color="#00ffff"># See also the &lt;VirtualHost&gt; and Listen directives.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#BindAddress *</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Dynamic Shared Object (DSO) Support</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># To be able to use the functionality of a module which was built as a DSO you</font>
+<font color="#00ffff"># have to place corresponding `LoadModule' lines at this location so the</font>
+<font color="#00ffff"># directives contained in it are actually available _before_ they are used.</font>
+<font color="#00ffff"># Please read the file <A HREF="http://httpd.apache.org/docs/dso.html">http://httpd.apache.org/docs/dso.html</A> for more</font>
+<font color="#00ffff"># details about the DSO mechanism and run `httpd -l' for the list of already</font>
+<font color="#00ffff"># built-in (statically linked and thus always available) modules in your httpd</font>
+<font color="#00ffff"># binary.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Note: The order in which modules are loaded is important.  Don't change</font>
+<font color="#00ffff"># the order below without expert advice.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Example:</font>
+<font color="#00ffff"># LoadModule foo_module libexec/mod_foo.so</font>
+<font color="#ffffff"><b>LoadModule</b></font> mmap_static_module libexec/mod_mmap_static.so
+<font color="#ffffff"><b>LoadModule</b></font> vhost_alias_module libexec/mod_vhost_alias.so
+<font color="#ffffff"><b>LoadModule</b></font> env_module         libexec/mod_env.so
+<font color="#ffffff"><b>LoadModule</b></font> config_log_module  libexec/mod_log_config.so
+<font color="#ffffff"><b>LoadModule</b></font> agent_log_module   libexec/mod_log_agent.so
+<font color="#ffffff"><b>LoadModule</b></font> referer_log_module libexec/mod_log_referer.so
+<font color="#ffffff"><b>LoadModule</b></font> mime_magic_module  libexec/mod_mime_magic.so
+<font color="#ffffff"><b>LoadModule</b></font> mime_module        libexec/mod_mime.so
+<font color="#ffffff"><b>LoadModule</b></font> negotiation_module libexec/mod_negotiation.so
+<font color="#ffffff"><b>LoadModule</b></font> status_module      libexec/mod_status.so
+<font color="#ffffff"><b>LoadModule</b></font> info_module        libexec/mod_info.so
+<font color="#ffffff"><b>LoadModule</b></font> includes_module    libexec/mod_include.so
+<font color="#ffffff"><b>LoadModule</b></font> autoindex_module   libexec/mod_autoindex.so
+<font color="#ffffff"><b>LoadModule</b></font> dir_module         libexec/mod_dir.so
+<font color="#ffffff"><b>LoadModule</b></font> cgi_module         libexec/mod_cgi.so
+<font color="#ffffff"><b>LoadModule</b></font> asis_module        libexec/mod_asis.so
+<font color="#ffffff"><b>LoadModule</b></font> imap_module        libexec/mod_imap.so
+<font color="#ffffff"><b>LoadModule</b></font> action_module      libexec/mod_actions.so
+<font color="#ffffff"><b>LoadModule</b></font> speling_module     libexec/mod_speling.so
+<font color="#ffffff"><b>LoadModule</b></font> userdir_module     libexec/mod_userdir.so
+<font color="#ffffff"><b>LoadModule</b></font> alias_module       libexec/mod_alias.so
+<font color="#ffffff"><b>LoadModule</b></font> rewrite_module     libexec/mod_rewrite.so
+<font color="#ffffff"><b>LoadModule</b></font> access_module      libexec/mod_access.so
+<font color="#ffffff"><b>LoadModule</b></font> auth_module        libexec/mod_auth.so
+<font color="#ffffff"><b>LoadModule</b></font> anon_auth_module   libexec/mod_auth_anon.so
+<font color="#ffffff"><b>LoadModule</b></font> digest_auth_module libexec/mod_auth_digest.so
+<font color="#ffffff"><b>LoadModule</b></font> proxy_module       libexec/libproxy.so
+<font color="#ffffff"><b>LoadModule</b></font> cern_meta_module   libexec/mod_cern_meta.so
+<font color="#ffffff"><b>LoadModule</b></font> expires_module     libexec/mod_expires.so
+<font color="#ffffff"><b>LoadModule</b></font> headers_module     libexec/mod_headers.so
+<font color="#ffffff"><b>LoadModule</b></font> usertrack_module   libexec/mod_usertrack.so
+<font color="#ffffff"><b>LoadModule</b></font> example_module     libexec/mod_example.so
+<font color="#ffffff"><b>LoadModule</b></font> log_forensic_module libexec/mod_log_forensic.so
+<font color="#ffffff"><b>LoadModule</b></font> unique_id_module   libexec/mod_unique_id.so
+<font color="#ffffff"><b>LoadModule</b></font> setenvif_module    libexec/mod_setenvif.so
+
+<font color="#00ffff">#  Reconstruction of the complete module list from all available modules</font>
+<font color="#00ffff">#  (static and shared ones) to achieve correct module execution order.</font>
+<font color="#00ffff">#  [WHENEVER YOU CHANGE THE LOADMODULE SECTION ABOVE UPDATE THIS, TOO]</font>
+<font color="#ffffff"><b>ClearModuleList</b></font>
+<font color="#ffffff"><b>AddModule</b></font> mod_mmap_static.c
+<font color="#ffffff"><b>AddModule</b></font> mod_vhost_alias.c
+<font color="#ffffff"><b>AddModule</b></font> mod_env.c
+<font color="#ffffff"><b>AddModule</b></font> mod_define.c
+<font color="#ffffff"><b>AddModule</b></font> mod_log_config.c
+<font color="#ffffff"><b>AddModule</b></font> mod_log_agent.c
+<font color="#ffffff"><b>AddModule</b></font> mod_log_referer.c
+<font color="#ffffff"><b>AddModule</b></font> mod_mime_magic.c
+<font color="#ffffff"><b>AddModule</b></font> mod_mime.c
+<font color="#ffffff"><b>AddModule</b></font> mod_negotiation.c
+<font color="#ffffff"><b>AddModule</b></font> mod_status.c
+<font color="#ffffff"><b>AddModule</b></font> mod_info.c
+<font color="#ffffff"><b>AddModule</b></font> mod_include.c
+<font color="#ffffff"><b>AddModule</b></font> mod_autoindex.c
+<font color="#ffffff"><b>AddModule</b></font> mod_dir.c
+<font color="#ffffff"><b>AddModule</b></font> mod_cgi.c
+<font color="#ffffff"><b>AddModule</b></font> mod_asis.c
+<font color="#ffffff"><b>AddModule</b></font> mod_imap.c
+<font color="#ffffff"><b>AddModule</b></font> mod_actions.c
+<font color="#ffffff"><b>AddModule</b></font> mod_speling.c
+<font color="#ffffff"><b>AddModule</b></font> mod_userdir.c
+<font color="#ffffff"><b>AddModule</b></font> mod_alias.c
+<font color="#ffffff"><b>AddModule</b></font> mod_rewrite.c
+<font color="#ffffff"><b>AddModule</b></font> mod_access.c
+<font color="#ffffff"><b>AddModule</b></font> mod_auth.c
+<font color="#ffffff"><b>AddModule</b></font> mod_auth_anon.c
+<font color="#ffffff"><b>AddModule</b></font> mod_auth_digest.c
+<font color="#ffffff"><b>AddModule</b></font> mod_proxy.c
+<font color="#ffffff"><b>AddModule</b></font> mod_cern_meta.c
+<font color="#ffffff"><b>AddModule</b></font> mod_expires.c
+<font color="#ffffff"><b>AddModule</b></font> mod_headers.c
+<font color="#ffffff"><b>AddModule</b></font> mod_usertrack.c
+<font color="#ffffff"><b>AddModule</b></font> mod_example.c
+<font color="#ffffff"><b>AddModule</b></font> mod_log_forensic.c
+<font color="#ffffff"><b>AddModule</b></font> mod_unique_id.c
+<font color="#ffffff"><b>AddModule</b></font> mod_so.c
+<font color="#ffffff"><b>AddModule</b></font> mod_setenvif.c
+<font color="#ffff00"><b>&lt;IfDefine</b></font><font color="#ff40ff"><b> SSL</b></font><font color="#ffff00"><b>&gt;</b></font>
+<font color="#ffffff"><b>AddModule</b></font> mod_ssl.c
+<font color="#ffff00"><b>&lt;/IfDefine&gt;</b></font>
+<font color="#ffffff"><b>AddModule</b></font> mod_dosevasive.c
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># ExtendedStatus controls whether Apache will generate &quot;full&quot; status</font>
+<font color="#00ffff"># information (ExtendedStatus On) or just basic information (ExtendedStatus</font>
+<font color="#00ffff"># Off) when the &quot;server-status&quot; handler is called. The default is Off.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#ExtendedStatus On</font>
+
+<font color="#00ffff">### Section 2: 'Main' server configuration</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The directives in this section set up the values used by the 'main'</font>
+<font color="#00ffff"># server, which responds to any requests that aren't handled by a</font>
+<font color="#00ffff"># &lt;VirtualHost&gt; definition.  These values also provide defaults for</font>
+<font color="#00ffff"># any &lt;VirtualHost&gt; containers you may define later in the file.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># All of these directives may appear inside &lt;VirtualHost&gt; containers,</font>
+<font color="#00ffff"># in which case these default settings will be overridden for the</font>
+<font color="#00ffff"># virtual host being defined.</font>
+<font color="#00ffff">#</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># If your ServerType directive (set earlier in the 'Global Environment'</font>
+<font color="#00ffff"># section) is set to &quot;inetd&quot;, the next few directives don't have any</font>
+<font color="#00ffff"># effect since their settings are defined by the inetd configuration.</font>
+<font color="#00ffff"># Skip ahead to the ServerAdmin directive.</font>
+<font color="#00ffff">#</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Port: The port to which the standalone server listens. For</font>
+<font color="#00ffff"># ports &lt; 1023, you will need httpd to be run as root initially.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>Port</b></font> 8080
+
+<font color="#00ffff">##</font>
+<font color="#00ffff">##  SSL Support</font>
+<font color="#00ffff">##</font>
+<font color="#00ffff">##  When we also provide SSL we have to listen to the </font>
+<font color="#00ffff">##  standard HTTP port (see above) and to the HTTPS port</font>
+<font color="#00ffff">##</font>
+<font color="#ffff00"><b>&lt;IfDefine</b></font><font color="#ff40ff"><b> SSL</b></font><font color="#ffff00"><b>&gt;</b></font>
+<font color="#ffffff"><b>Listen</b></font> 8080
+<font color="#ffffff"><b>Listen</b></font> 8443
+<font color="#ffff00"><b>&lt;/IfDefine&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># If you wish httpd to run as a different user or group, you must run</font>
+<font color="#00ffff"># httpd as root initially and it will switch.  </font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># User/Group: The name (or #number) of the user/group to run httpd as.</font>
+<font color="#00ffff">#  . On SCO (ODT 3) use &quot;User nouser&quot; and &quot;Group nogroup&quot;.</font>
+<font color="#00ffff">#  . On HPUX you may not be able to use shared memory as nobody, and the</font>
+<font color="#00ffff">#    suggested workaround is to create a user www and use that user.</font>
+<font color="#00ffff">#  NOTE that some kernels refuse to setgid(Group) or semctl(IPC_SET)</font>
+<font color="#00ffff">#  when the value of (unsigned)Group is above 60000; </font>
+<font color="#00ffff">#  don't use Group &quot;#-1&quot; on these systems!</font>
+<font color="#00ffff">#</font>
+<font color="#ff40ff"><b>User</b></font> nobody
+<font color="#ff40ff"><b>Group</b></font> nogroup
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># ServerAdmin: Your address, where problems with the server should be</font>
+<font color="#00ffff"># e-mailed.  This address appears on some server-generated pages, such</font>
+<font color="#00ffff"># as error documents.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>ServerAdmin</b></font> jeremy@hightower.sd.dreamhost.com
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># ServerName allows you to set a host name which is sent back to clients for</font>
+<font color="#00ffff"># your server if it's different than the one the program would get (i.e., use</font>
+<font color="#00ffff"># &quot;www&quot; instead of the host's real name).</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Note: You cannot just invent host names and hope they work. The name you </font>
+<font color="#00ffff"># define here must be a valid DNS name for your host. If you don't understand</font>
+<font color="#00ffff"># this, ask your network administrator.</font>
+<font color="#00ffff"># If your host doesn't have a registered DNS name, enter its IP address here.</font>
+<font color="#00ffff"># You will have to access it by its address (e.g., <A HREF="http://123.45.67.89/)">http://123.45.67.89/)</A></font>
+<font color="#00ffff"># anyway, and this will make redirections work in a sensible way.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># 127.0.0.1 is the TCP/IP local loop-back address, often named localhost. Your </font>
+<font color="#00ffff"># machine always knows itself by this address. If you use Apache strictly for </font>
+<font color="#00ffff"># local testing and development, you may use 127.0.0.1 as the server name.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#ServerName www.example.com</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># DocumentRoot: The directory out of which you will serve your</font>
+<font color="#00ffff"># documents. By default, all requests are taken from this directory, but</font>
+<font color="#00ffff"># symbolic links and aliases may be used to point to other locations.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>DocumentRoot</b></font> <font color="#ff40ff"><b>&quot;/usr/local/dh/apache/template/docs&quot;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Each directory to which Apache has access, can be configured with respect</font>
+<font color="#00ffff"># to which services and features are allowed and/or disabled in that</font>
+<font color="#00ffff"># directory (and its subdirectories). </font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># First, we configure the &quot;default&quot; to be a very restrictive set of </font>
+<font color="#00ffff"># permissions.  </font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;Directory</b></font><font color="#ff40ff"><b> /</b></font><font color="#ffff00"><b>&gt;</b></font>
+    <font color="#ffffff"><b>Options</b></font> <font color="#ff40ff"><b>FollowSymLinks</b></font>
+    <font color="#ffffff"><b>AllowOverride</b></font> <font color="#ff40ff"><b>None</b></font>
+<font color="#ffff00"><b>&lt;/Directory&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Note that from this point forward you must specifically allow</font>
+<font color="#00ffff"># particular features to be enabled - so if something's not working as</font>
+<font color="#00ffff"># you might expect, make sure that you have specifically enabled it</font>
+<font color="#00ffff"># below.</font>
+<font color="#00ffff">#</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># This should be changed to whatever you set DocumentRoot to.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;Directory</b></font><font color="#ff40ff"><b> &quot;/usr/local/dh/apache/template/docs&quot;</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># This may also be &quot;None&quot;, &quot;All&quot;, or any combination of &quot;Indexes&quot;,</font>
+<font color="#00ffff"># &quot;Includes&quot;, &quot;FollowSymLinks&quot;, &quot;ExecCGI&quot;, or &quot;MultiViews&quot;.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Note that &quot;MultiViews&quot; must be named *explicitly* --- &quot;Options All&quot;</font>
+<font color="#00ffff"># doesn't give it to you.</font>
+<font color="#00ffff">#</font>
+    <font color="#ffffff"><b>Options</b></font> <font color="#ff40ff"><b>Indexes</b></font> <font color="#ff40ff"><b>FollowSymLinks</b></font> <font color="#ff40ff"><b>MultiViews</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># This controls which options the .htaccess files in directories can</font>
+<font color="#00ffff"># override. Can also be &quot;All&quot;, or any combination of &quot;Options&quot;, &quot;FileInfo&quot;, </font>
+<font color="#00ffff"># &quot;AuthConfig&quot;, and &quot;Limit&quot;</font>
+<font color="#00ffff">#</font>
+    <font color="#ffffff"><b>AllowOverride</b></font> <font color="#ff40ff"><b>None</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Controls who can get stuff from this server.</font>
+<font color="#00ffff">#</font>
+<font color="#ff40ff">    Order </font><font color="#ff40ff"><b>allow</b></font><font color="#ff40ff">,</font><font color="#ff40ff"><b>deny</b></font>
+    <font color="#8080ff"><b>Allow from </b></font><font color="#00ffff"><b>all</b></font>
+<font color="#ffff00"><b>&lt;/Directory&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># UserDir: The name of the directory which is appended onto a user's home</font>
+<font color="#00ffff"># directory if a ~user request is received.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_userdir.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+    <font color="#ffffff"><b>UserDir</b></font> public_html
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Control access to UserDir directories.  The following is an example</font>
+<font color="#00ffff"># for a site where these directories are restricted to read-only.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#&lt;Directory /home/*/public_html&gt;</font>
+<font color="#00ffff">#    AllowOverride FileInfo AuthConfig Limit</font>
+<font color="#00ffff">#    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec</font>
+<font color="#00ffff">#    &lt;Limit GET POST OPTIONS PROPFIND&gt;</font>
+<font color="#00ffff">#        Order allow,deny</font>
+<font color="#00ffff">#        Allow from all</font>
+<font color="#00ffff">#    &lt;/Limit&gt;</font>
+<font color="#00ffff">#    &lt;LimitExcept GET POST OPTIONS PROPFIND&gt;</font>
+<font color="#00ffff">#        Order deny,allow</font>
+<font color="#00ffff">#        Deny from all</font>
+<font color="#00ffff">#    &lt;/LimitExcept&gt;</font>
+<font color="#00ffff">#&lt;/Directory&gt;</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># DirectoryIndex: Name of the file or files to use as a pre-written HTML</font>
+<font color="#00ffff"># directory index.  Separate multiple entries with spaces.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_dir.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+    <font color="#ffffff"><b>DirectoryIndex</b></font> index.html
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># AccessFileName: The name of the file to look for in each directory</font>
+<font color="#00ffff"># for access control information.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>AccessFileName</b></font> .htaccess
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The following lines prevent .htaccess files from being viewed by</font>
+<font color="#00ffff"># Web clients.  Since .htaccess files often contain authorization</font>
+<font color="#00ffff"># information, access is disallowed for security reasons.  Comment</font>
+<font color="#00ffff"># these lines out if you want Web visitors to see the contents of</font>
+<font color="#00ffff"># .htaccess files.  If you change the AccessFileName directive above,</font>
+<font color="#00ffff"># be sure to make the corresponding changes here.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Also, folks tend to use names such as .htpasswd for password</font>
+<font color="#00ffff"># files, so this will protect those as well.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;Files</b></font><font color="#ff40ff"><b> ~ &quot;^\.ht&quot;</b></font><font color="#ffff00"><b>&gt;</b></font>
+<font color="#ff40ff">    Order </font><font color="#ff40ff"><b>allow</b></font><font color="#ff40ff">,</font><font color="#ff40ff"><b>deny</b></font>
+    <font color="#8080ff"><b>Deny from </b></font><font color="#00ffff"><b>all</b></font>
+    <font color="#ffffff"><b>Satisfy</b></font> <font color="#ff40ff"><b>All</b></font>
+<font color="#ffff00"><b>&lt;/Files&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># CacheNegotiatedDocs: By default, Apache sends &quot;Pragma: no-cache&quot; with each</font>
+<font color="#00ffff"># document that was negotiated on the basis of content. This asks proxy</font>
+<font color="#00ffff"># servers not to cache the document. Uncommenting the following line disables</font>
+<font color="#00ffff"># this behavior, and proxies will be allowed to cache the documents.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#CacheNegotiatedDocs</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># UseCanonicalName:  (new for 1.3)  With this setting turned on, whenever</font>
+<font color="#00ffff"># Apache needs to construct a self-referencing URL (a URL that refers back</font>
+<font color="#00ffff"># to the server the response is coming from) it will use ServerName and</font>
+<font color="#00ffff"># Port to form a &quot;canonical&quot; name.  With this setting off, Apache will</font>
+<font color="#00ffff"># use the hostname:port that the client supplied, when possible.  This</font>
+<font color="#00ffff"># also affects SERVER_NAME and SERVER_PORT in CGI scripts.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>UseCanonicalName</b></font> <font color="#ff40ff"><b>On</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># TypesConfig describes where the mime.types file (or equivalent) is</font>
+<font color="#00ffff"># to be found.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_mime.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+    <font color="#ffffff"><b>TypesConfig</b></font> /usr/local/dh/apache/template/etc/mime.types
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># DefaultType is the default MIME type the server will use for a document</font>
+<font color="#00ffff"># if it cannot otherwise determine one, such as from filename extensions.</font>
+<font color="#00ffff"># If your server contains mostly text or HTML documents, &quot;text/plain&quot; is</font>
+<font color="#00ffff"># a good value.  If most of your content is binary, such as applications</font>
+<font color="#00ffff"># or images, you may want to use &quot;application/octet-stream&quot; instead to</font>
+<font color="#00ffff"># keep browsers from trying to display binary files as though they are</font>
+<font color="#00ffff"># text.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>DefaultType</b></font> text/plain
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The mod_mime_magic module allows the server to use various hints from the</font>
+<font color="#00ffff"># contents of the file itself to determine its type.  The MIMEMagicFile</font>
+<font color="#00ffff"># directive tells the module where the hint definitions are located.</font>
+<font color="#00ffff"># mod_mime_magic is not part of the default server (you have to add</font>
+<font color="#00ffff"># it yourself with a LoadModule [see the DSO paragraph in the 'Global</font>
+<font color="#00ffff"># Environment' section], or recompile the server and include mod_mime_magic</font>
+<font color="#00ffff"># as part of the configuration), so it's enclosed in an &lt;IfModule&gt; container.</font>
+<font color="#00ffff"># This means that the MIMEMagicFile directive will only be processed if the</font>
+<font color="#00ffff"># module is part of the server.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_mime_magic.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+    <font color="#ffffff"><b>MIMEMagicFile</b></font> /usr/local/dh/apache/template/etc/magic
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># HostnameLookups: Log the names of clients or just their IP addresses</font>
+<font color="#00ffff"># e.g., www.apache.org (on) or 204.62.129.132 (off).</font>
+<font color="#00ffff"># The default is off because it'd be overall better for the net if people</font>
+<font color="#00ffff"># had to knowingly turn this feature on, since enabling it means that</font>
+<font color="#00ffff"># each client request will result in AT LEAST one lookup request to the</font>
+<font color="#00ffff"># nameserver.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>HostnameLookups</b></font> <font color="#ff40ff"><b>Off</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># ErrorLog: The location of the error log file.</font>
+<font color="#00ffff"># If you do not specify an ErrorLog directive within a &lt;VirtualHost&gt;</font>
+<font color="#00ffff"># container, error messages relating to that virtual host will be</font>
+<font color="#00ffff"># logged here.  If you *do* define an error logfile for a &lt;VirtualHost&gt;</font>
+<font color="#00ffff"># container, that host's errors will be logged there and not here.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>ErrorLog</b></font> /usr/local/dh/apache/logs/error_log
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># LogLevel: Control the number of messages logged to the error_log.</font>
+<font color="#00ffff"># Possible values include: debug, info, notice, warn, error, crit,</font>
+<font color="#00ffff"># alert, emerg.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>LogLevel</b></font> <font color="#ff40ff"><b>warn</b></font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The following directives define some format nicknames for use with</font>
+<font color="#00ffff"># a CustomLog directive (see below).</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>LogFormat</b></font> <font color="#ff40ff"><b>&quot;%h %l %u %t \&quot;%r\&quot; %&gt;s %b \&quot;%{Referer}i\&quot; \&quot;%{User-Agent}i\&quot;&quot;</b></font> combined
+<font color="#ffffff"><b>LogFormat</b></font> <font color="#ff40ff"><b>&quot;%h %l %u %t \&quot;%r\&quot; %&gt;s %b&quot;</b></font> common
+<font color="#ffffff"><b>LogFormat</b></font> <font color="#ff40ff"><b>&quot;%{Referer}i -&gt; %U&quot;</b></font> <font color="#ff40ff"><b>referer</b></font>
+<font color="#ffffff"><b>LogFormat</b></font> <font color="#ff40ff"><b>&quot;%{User-agent}i&quot;</b></font> agent
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The location and format of the access logfile (Common Logfile Format).</font>
+<font color="#00ffff"># If you do not define any access logfiles within a &lt;VirtualHost&gt;</font>
+<font color="#00ffff"># container, they will be logged here.  Contrariwise, if you *do*</font>
+<font color="#00ffff"># define per-&lt;VirtualHost&gt; access logfiles, transactions will be</font>
+<font color="#00ffff"># logged therein and *not* in this file.</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>CustomLog</b></font> /usr/local/dh/apache/logs/access_log common
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># If you would like to have agent and referer logfiles, uncomment the</font>
+<font color="#00ffff"># following directives.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#CustomLog /usr/local/dh/apache/logs/referer_log referer</font>
+<font color="#00ffff">#CustomLog /usr/local/dh/apache/logs/agent_log agent</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># If you prefer a single logfile with access, agent, and referer information</font>
+<font color="#00ffff"># (Combined Logfile Format) you can use the following directive.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#CustomLog /usr/local/dh/apache/logs/access_log combined</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Optionally add a line containing the server version and virtual host</font>
+<font color="#00ffff"># name to server-generated pages (error documents, FTP directory listings,</font>
+<font color="#00ffff"># mod_status and mod_info output etc., but not CGI generated documents).</font>
+<font color="#00ffff"># Set to &quot;EMail&quot; to also include a mailto: link to the ServerAdmin.</font>
+<font color="#00ffff"># Set to one of:  On | Off | EMail</font>
+<font color="#00ffff">#</font>
+<font color="#ffffff"><b>ServerSignature</b></font> <font color="#ff40ff"><b>On</b></font>
+
+<font color="#00ffff"># EBCDIC configuration:</font>
+<font color="#00ffff"># (only for mainframes using the EBCDIC codeset, currently one of:</font>
+<font color="#00ffff"># Fujitsu-Siemens' BS2000/OSD, IBM's OS/390 and IBM's TPF)!!</font>
+<font color="#00ffff"># The following default configuration assumes that &quot;text files&quot;</font>
+<font color="#00ffff"># are stored in EBCDIC (so that you can operate on them using the</font>
+<font color="#00ffff"># normal POSIX tools like grep and sort) while &quot;binary files&quot; are</font>
+<font color="#00ffff"># stored with identical octets as on an ASCII machine.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># The directives are evaluated in configuration file order, with</font>
+<font color="#00ffff"># the EBCDICConvert directives applied before EBCDICConvertByType.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># If you want to have ASCII HTML documents and EBCDIC HTML documents</font>
+<font color="#00ffff"># at the same time, you can use the file extension to force</font>
+<font color="#00ffff"># conversion off for the ASCII documents:</font>
+<font color="#00ffff"># &gt; AddType       text/html .ahtml</font>
+<font color="#00ffff"># &gt; EBCDICConvert Off=InOut .ahtml</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># EBCDICConvertByType  On=InOut text/* message/* multipart/*</font>
+<font color="#00ffff"># EBCDICConvertByType  On=In    application/x-www-form-urlencoded</font>
+<font color="#00ffff"># EBCDICConvertByType  On=InOut application/postscript model/vrml</font>
+<font color="#00ffff"># EBCDICConvertByType Off=InOut */*</font>
+
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Aliases: Add here as many aliases as you need (with no limit). The format is </font>
+<font color="#00ffff"># Alias fakename realname</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_alias.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # Note that if you include a trailing / on fakename then the server will</font>
+<font color="#00ffff">    # require it to be present in the URL.  So &quot;/icons&quot; isn't aliased in this</font>
+<font color="#00ffff">    # example, only &quot;/icons/&quot;.  If the fakename is slash-terminated, then the </font>
+<font color="#00ffff">    # realname must also be slash terminated, and if the fakename omits the </font>
+<font color="#00ffff">    # trailing slash, the realname must also omit it.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>Alias</b></font> /icons/ <font color="#ff40ff"><b>&quot;/usr/local/dh/apache/template/icons/&quot;</b></font>
+
+    <font color="#ffff00"><b>&lt;Directory</b></font><font color="#ff40ff"><b> &quot;/usr/local/dh/apache/template/icons&quot;</b></font><font color="#ffff00"><b>&gt;</b></font>
+        <font color="#ffffff"><b>Options</b></font> <font color="#ff40ff"><b>Indexes</b></font> <font color="#ff40ff"><b>MultiViews</b></font>
+        <font color="#ffffff"><b>AllowOverride</b></font> <font color="#ff40ff"><b>None</b></font>
+<font color="#ff40ff">        Order </font><font color="#ff40ff"><b>allow</b></font><font color="#ff40ff">,</font><font color="#ff40ff"><b>deny</b></font>
+        <font color="#8080ff"><b>Allow from </b></font><font color="#00ffff"><b>all</b></font>
+    <font color="#ffff00"><b>&lt;/Directory&gt;</b></font>
+
+<font color="#00ffff">    # This Alias will project the on-line documentation tree under /manual/</font>
+<font color="#00ffff">    # even if you change the DocumentRoot. Comment it if you don't want to </font>
+<font color="#00ffff">    # provide access to the on-line documentation.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>Alias</b></font> /manual/ <font color="#ff40ff"><b>&quot;/usr/local/dh/apache/template/docs/manual/&quot;</b></font>
+
+    <font color="#ffff00"><b>&lt;Directory</b></font><font color="#ff40ff"><b> &quot;/usr/local/dh/apache/template/docs/manual&quot;</b></font><font color="#ffff00"><b>&gt;</b></font>
+        <font color="#ffffff"><b>Options</b></font> <font color="#ff40ff"><b>Indexes</b></font> <font color="#ff40ff"><b>FollowSymlinks</b></font> <font color="#ff40ff"><b>MultiViews</b></font>
+        <font color="#ffffff"><b>AllowOverride</b></font> <font color="#ff40ff"><b>None</b></font>
+<font color="#ff40ff">        Order </font><font color="#ff40ff"><b>allow</b></font><font color="#ff40ff">,</font><font color="#ff40ff"><b>deny</b></font>
+        <font color="#8080ff"><b>Allow from </b></font><font color="#00ffff"><b>all</b></font>
+    <font color="#ffff00"><b>&lt;/Directory&gt;</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # ScriptAlias: This controls which directories contain server scripts.</font>
+<font color="#00ffff">    # ScriptAliases are essentially the same as Aliases, except that</font>
+<font color="#00ffff">    # documents in the realname directory are treated as applications and</font>
+<font color="#00ffff">    # run by the server when requested rather than as documents sent to the client.</font>
+<font color="#00ffff">    # The same rules about trailing &quot;/&quot; apply to ScriptAlias directives as to</font>
+<font color="#00ffff">    # Alias.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>ScriptAlias</b></font> /cgi-bin/ <font color="#ff40ff"><b>&quot;/usr/local/dh/web/cgi-bin/&quot;</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # &quot;/usr/local/dh/web/cgi-bin&quot; should be changed to whatever your ScriptAliased</font>
+<font color="#00ffff">    # CGI directory exists, if you have that configured.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffff00"><b>&lt;Directory</b></font><font color="#ff40ff"><b> &quot;/usr/local/dh/web/cgi-bin&quot;</b></font><font color="#ffff00"><b>&gt;</b></font>
+        <font color="#ffffff"><b>AllowOverride</b></font> <font color="#ff40ff"><b>None</b></font>
+        <font color="#ffffff"><b>Options</b></font> <font color="#ff40ff"><b>None</b></font>
+<font color="#ff40ff">        Order </font><font color="#ff40ff"><b>allow</b></font><font color="#ff40ff">,</font><font color="#ff40ff"><b>deny</b></font>
+        <font color="#8080ff"><b>Allow from </b></font><font color="#00ffff"><b>all</b></font>
+    <font color="#ffff00"><b>&lt;/Directory&gt;</b></font>
+
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+<font color="#00ffff"># End of aliases.</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Redirect allows you to tell clients about documents which used to exist in</font>
+<font color="#00ffff"># your server's namespace, but do not anymore. This allows you to tell the</font>
+<font color="#00ffff"># clients where to look for the relocated document.</font>
+<font color="#00ffff"># Format: Redirect old-URI new-URL</font>
+<font color="#00ffff">#</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Directives controlling the display of server-generated directory listings.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_autoindex.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # FancyIndexing is whether you want fancy directory indexing or standard</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>IndexOptions</b></font> <font color="#ff40ff"><b>FancyIndexing</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # AddIcon* directives tell the server which icon to show for different</font>
+<font color="#00ffff">    # files or filename extensions.  These are only displayed for</font>
+<font color="#00ffff">    # FancyIndexed directories.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>AddIconByEncoding</b></font> (CMP,/icons/compressed.gif) x-compress x-gzip
+
+    <font color="#ffffff"><b>AddIconByType</b></font> (TXT,/icons/text.gif) text/*
+    <font color="#ffffff"><b>AddIconByType</b></font> (IMG,/icons/image2.gif) image/*
+    <font color="#ffffff"><b>AddIconByType</b></font> (SND,/icons/sound2.gif) audio/*
+    <font color="#ffffff"><b>AddIconByType</b></font> (VID,/icons/movie.gif) video/*
+
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/binary.gif .bin .exe
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/binhex.gif .hqx
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/tar.gif .tar
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/world2.gif .wrl .wrl.gz .vrml .vrm .iv
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/compressed.gif .Z .z .tgz .gz .zip
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/a.gif .ps .ai .eps
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/layout.gif .html .shtml .htm .pdf
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/text.gif .txt
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/c.gif .c
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/p.gif .pl .py
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/f.gif .for
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/dvi.gif .dvi
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/uuencoded.gif .uu
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/<font color="#ffffff"><b>script</b></font>.gif .conf .sh .shar .csh .ksh .tcl
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/tex.gif .tex
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/bomb.gif core
+
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/back.gif ..
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/hand.right.gif README
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/folder.gif ^^DIRECTORY^^
+    <font color="#ffffff"><b>AddIcon</b></font> /icons/blank.gif ^^BLANKICON^^
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # DefaultIcon is which icon to show for files which do not have an icon</font>
+<font color="#00ffff">    # explicitly set.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>DefaultIcon</b></font> /icons/unknown.gif
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # AddDescription allows you to place a short description after a file in</font>
+<font color="#00ffff">    # server-generated indexes.  These are only displayed for FancyIndexed</font>
+<font color="#00ffff">    # directories.</font>
+<font color="#00ffff">    # Format: AddDescription &quot;description&quot; filename</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    #AddDescription &quot;GZIP compressed document&quot; .gz</font>
+<font color="#00ffff">    #AddDescription &quot;tar archive&quot; .tar</font>
+<font color="#00ffff">    #AddDescription &quot;GZIP compressed tar archive&quot; .tgz</font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # ReadmeName is the name of the README file the server will look for by</font>
+<font color="#00ffff">    # default, and append to directory listings.</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # HeaderName is the name of a file which should be prepended to</font>
+<font color="#00ffff">    # directory indexes. </font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>ReadmeName</b></font> README.html
+    <font color="#ffffff"><b>HeaderName</b></font> <font color="#ffffff"><b>HEADER</b></font>.html
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # IndexIgnore is a set of filenames which directory indexing should ignore</font>
+<font color="#00ffff">    # and not include in the listing.  Shell-style wildcarding is permitted.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>IndexIgnore</b></font> .??* *~ *# <font color="#ffffff"><b>HEADER</b></font>* README* RCS CVS *,v *,t
+
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+<font color="#00ffff"># End of indexing directives.</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Document types.</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_mime.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # AddLanguage allows you to specify the language of a document. You can</font>
+<font color="#00ffff">    # then use content negotiation to give a browser a file in a language</font>
+<font color="#00ffff">    # it can understand.  </font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # Note 1: The suffix does not have to be the same as the language </font>
+<font color="#00ffff">    # keyword --- those with documents in Polish (whose net-standard </font>
+<font color="#00ffff">    # language code is pl) may wish to use &quot;AddLanguage pl .po&quot; to </font>
+<font color="#00ffff">    # avoid the ambiguity with the common suffix for perl scripts.</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # Note 2: The example entries below illustrate that in quite</font>
+<font color="#00ffff">    # some cases the two character 'Language' abbreviation is not</font>
+<font color="#00ffff">    # identical to the two character 'Country' code for its country,</font>
+<font color="#00ffff">    # E.g. 'Danmark/dk' versus 'Danish/da'.</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # Note 3: In the case of 'ltz' we violate the RFC by using a three char </font>
+<font color="#00ffff">    # specifier. But there is 'work in progress' to fix this and get </font>
+<font color="#00ffff">    # the reference data for rfc1766 cleaned up.</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # Danish (da) - Dutch (nl) - English (en) - Estonian (ee)</font>
+<font color="#00ffff">    # French (fr) - German (de) - Greek-Modern (el)</font>
+<font color="#00ffff">    # Italian (it) - Korean (kr) - Norwegian (no) - Norwegian Nynorsk (nn)</font>
+<font color="#00ffff">    # Portugese (pt) - Luxembourgeois* (ltz)</font>
+<font color="#00ffff">    # Spanish (es) - Swedish (sv) - Catalan (ca) - Czech(cs)</font>
+<font color="#00ffff">    # Polish (pl) - Brazilian Portuguese (pt-br) - Japanese (ja)</font>
+<font color="#00ffff">    # Russian (ru)</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>AddLanguage</b></font> da .dk
+    <font color="#ffffff"><b>AddLanguage</b></font> nl .nl
+    <font color="#ffffff"><b>AddLanguage</b></font> en .en
+    <font color="#ffffff"><b>AddLanguage</b></font> et .ee
+    <font color="#ffffff"><b>AddLanguage</b></font> fr .fr
+    <font color="#ffffff"><b>AddLanguage</b></font> de .de
+    <font color="#ffffff"><b>AddLanguage</b></font> el .el
+    <font color="#ffffff"><b>AddLanguage</b></font> he .he
+    <font color="#ffffff"><b>AddCharset</b></font> ISO-8859-8 .iso8859-8
+    <font color="#ffffff"><b>AddLanguage</b></font> it .it
+    <font color="#ffffff"><b>AddLanguage</b></font> ja .ja
+    <font color="#ffffff"><b>AddCharset</b></font> ISO-2022-JP .jis
+    <font color="#ffffff"><b>AddLanguage</b></font> kr .kr
+    <font color="#ffffff"><b>AddCharset</b></font> ISO-2022-KR .iso-kr
+    <font color="#ffffff"><b>AddLanguage</b></font> nn .nn
+    <font color="#ffffff"><b>AddLanguage</b></font> no .no
+    <font color="#ffffff"><b>AddLanguage</b></font> pl .po
+    <font color="#ffffff"><b>AddCharset</b></font> ISO-8859-2 .iso-pl
+    <font color="#ffffff"><b>AddLanguage</b></font> pt .pt
+    <font color="#ffffff"><b>AddLanguage</b></font> pt-br .pt-br
+    <font color="#ffffff"><b>AddLanguage</b></font> ltz .lu
+    <font color="#ffffff"><b>AddLanguage</b></font> ca .ca
+    <font color="#ffffff"><b>AddLanguage</b></font> es .es
+    <font color="#ffffff"><b>AddLanguage</b></font> sv .sv
+    <font color="#ffffff"><b>AddLanguage</b></font> cs .cz .cs
+    <font color="#ffffff"><b>AddLanguage</b></font> ru .ru
+    <font color="#ffffff"><b>AddLanguage</b></font> zh-TW .zh-tw
+    <font color="#ffffff"><b>AddCharset</b></font> Big5         .Big5    .big5
+    <font color="#ffffff"><b>AddCharset</b></font> WINDOWS-1251 .cp-1251
+    <font color="#ffffff"><b>AddCharset</b></font> CP866        .cp866
+    <font color="#ffffff"><b>AddCharset</b></font> ISO-8859-5   .iso-ru
+    <font color="#ffffff"><b>AddCharset</b></font> KOI8-R       .koi8-r
+    <font color="#ffffff"><b>AddCharset</b></font> UCS-2        .ucs2
+    <font color="#ffffff"><b>AddCharset</b></font> UCS-4        .ucs4
+    <font color="#ffffff"><b>AddCharset</b></font> UTF-8        .utf8
+
+<font color="#00ffff">    # LanguagePriority allows you to give precedence to some languages</font>
+<font color="#00ffff">    # in case of a tie during content negotiation.</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # Just list the languages in decreasing order of preference. We have</font>
+<font color="#00ffff">    # more or less alphabetized them here. You probably want to change this.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_negotiation.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+        <font color="#ffffff"><b>LanguagePriority</b></font> en da nl et fr de el it ja kr no pl pt pt-br ru ltz ca es sv tw
+    <font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # AddType allows you to tweak mime.types without actually editing it, or to</font>
+<font color="#00ffff">    # make certain files to be certain types.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>AddType</b></font> application/x-tar .tgz
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # AddEncoding allows you to have certain browsers uncompress</font>
+<font color="#00ffff">    # information on the fly. Note: Not all browsers support this.</font>
+<font color="#00ffff">    # Despite the name similarity, the following Add* directives have nothing</font>
+<font color="#00ffff">    # to do with the FancyIndexing customization directives above.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>AddEncoding</b></font> x-compress .Z
+    <font color="#ffffff"><b>AddEncoding</b></font> x-gzip .gz .tgz
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # If the AddEncoding directives above are commented-out, then you</font>
+<font color="#00ffff">    # probably should define those extensions to indicate media types:</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    #AddType application/x-compress .Z</font>
+<font color="#00ffff">    #AddType application/x-gzip .gz .tgz</font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # AddHandler allows you to map certain file extensions to &quot;handlers&quot;,</font>
+<font color="#00ffff">    # actions unrelated to filetype. These can be either built into the server</font>
+<font color="#00ffff">    # or added with the Action command (see below)</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # If you want to use server side includes, or CGI outside</font>
+<font color="#00ffff">    # ScriptAliased directories, uncomment the following lines.</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # To use CGI scripts:</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    #AddHandler cgi-script .cgi</font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # To use server-parsed HTML files</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    #AddType text/html .shtml</font>
+<font color="#00ffff">    #AddHandler server-parsed .shtml</font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # Uncomment the following line to enable Apache's send-asis HTTP file</font>
+<font color="#00ffff">    # feature</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    #AddHandler send-as-is asis</font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # If you wish to use server-parsed imagemap files, use</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    #AddHandler imap-file map</font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # To enable type maps, you might want to use</font>
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    #AddHandler type-map var</font>
+
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+<font color="#00ffff"># End of document types.</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Action lets you define media types that will execute a script whenever</font>
+<font color="#00ffff"># a matching file is called. This eliminates the need for repeated URL</font>
+<font color="#00ffff"># pathnames for oft-used CGI file processors.</font>
+<font color="#00ffff"># Format: Action media/type /cgi-script/location</font>
+<font color="#00ffff"># Format: Action handler-name /cgi-script/location</font>
+<font color="#00ffff">#</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># MetaDir: specifies the name of the directory in which Apache can find</font>
+<font color="#00ffff"># meta information files. These files contain additional HTTP headers</font>
+<font color="#00ffff"># to include when sending the document</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#MetaDir .web</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># MetaSuffix: specifies the file name suffix for the file containing the</font>
+<font color="#00ffff"># meta information.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#MetaSuffix .meta</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Customizable error response (Apache style)</font>
+<font color="#00ffff">#  these come in three flavors</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#    1) plain text</font>
+<font color="#00ffff">#ErrorDocument 500 &quot;The server made a boo boo.</font>
+<font color="#00ffff">#  n.b.  the single leading (&quot;) marks it as text, it does not get output</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#    2) local redirects</font>
+<font color="#00ffff">#ErrorDocument 404 /missing.html</font>
+<font color="#00ffff">#  to redirect to local URL /missing.html</font>
+<font color="#00ffff">#ErrorDocument 404 /cgi-bin/missing_handler.pl</font>
+<font color="#00ffff">#  N.B.: You can redirect to a script or a document using server-side-includes.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#    3) external redirects</font>
+<font color="#00ffff">#ErrorDocument 402 <A HREF="http://www.example.com/subscription_info.html">http://www.example.com/subscription_info.html</A></font>
+<font color="#00ffff">#  N.B.: Many of the environment variables associated with the original</font>
+<font color="#00ffff">#  request will *not* be available to such a script.</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Customize behaviour based on the browser</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_setenvif.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # The following directives modify normal HTTP response behavior.</font>
+<font color="#00ffff">    # The first directive disables keepalive for Netscape 2.x and browsers that</font>
+<font color="#00ffff">    # spoof it. There are known problems with these browser implementations.</font>
+<font color="#00ffff">    # The second directive is for Microsoft Internet Explorer 4.0b2</font>
+<font color="#00ffff">    # which has a broken HTTP/1.1 implementation and does not properly</font>
+<font color="#00ffff">    # support keepalive when it is used on 301 or 302 (redirect) responses.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>BrowserMatch</b></font> <font color="#ff40ff"><b>&quot;Mozilla/2&quot;</b></font> nokeepalive
+    <font color="#ffffff"><b>BrowserMatch</b></font> <font color="#ff40ff"><b>&quot;MSIE 4\.0b2;&quot;</b></font> nokeepalive downgrade-1.0 force-response-1.0
+
+<font color="#00ffff">    #</font>
+<font color="#00ffff">    # The following directive disables HTTP/1.1 responses to browsers which</font>
+<font color="#00ffff">    # are in violation of the HTTP/1.0 spec by not being able to grok a</font>
+<font color="#00ffff">    # basic 1.1 response.</font>
+<font color="#00ffff">    #</font>
+    <font color="#ffffff"><b>BrowserMatch</b></font> <font color="#ff40ff"><b>&quot;RealPlayer 4\.0&quot;</b></font> force-response-1.0
+    <font color="#ffffff"><b>BrowserMatch</b></font> <font color="#ff40ff"><b>&quot;Java/1\.0&quot;</b></font> force-response-1.0
+    <font color="#ffffff"><b>BrowserMatch</b></font> <font color="#ff40ff"><b>&quot;JDK/1\.0&quot;</b></font> force-response-1.0
+
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+<font color="#00ffff"># End of browser customization directives</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Allow server status reports, with the URL of <A HREF="http://servername/server-status">http://servername/server-status</A></font>
+<font color="#00ffff"># Change the &quot;.example.com&quot; to match your domain to enable.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#&lt;Location /server-status&gt;</font>
+<font color="#00ffff">#    SetHandler server-status</font>
+<font color="#00ffff">#    Order deny,allow</font>
+<font color="#00ffff">#    Deny from all</font>
+<font color="#00ffff">#    Allow from .example.com</font>
+<font color="#00ffff">#&lt;/Location&gt;</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Allow remote server configuration reports, with the URL of</font>
+<font color="#00ffff"># <A HREF="http://servername/server-info">http://servername/server-info</A> (requires that mod_info.c be loaded).</font>
+<font color="#00ffff"># Change the &quot;.example.com&quot; to match your domain to enable.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#&lt;Location /server-info&gt;</font>
+<font color="#00ffff">#    SetHandler server-info</font>
+<font color="#00ffff">#    Order deny,allow</font>
+<font color="#00ffff">#    Deny from all</font>
+<font color="#00ffff">#    Allow from .example.com</font>
+<font color="#00ffff">#&lt;/Location&gt;</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># There have been reports of people trying to abuse an old bug from pre-1.1</font>
+<font color="#00ffff"># days.  This bug involved a CGI script distributed as a part of Apache.</font>
+<font color="#00ffff"># By uncommenting these lines you can redirect these attacks to a logging </font>
+<font color="#00ffff"># script on phf.apache.org.  Or, you can record them yourself, using the script</font>
+<font color="#00ffff"># support/phf_abuse_log.cgi.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#&lt;Location /cgi-bin/phf*&gt;</font>
+<font color="#00ffff">#    Deny from all</font>
+<font color="#00ffff">#    ErrorDocument 403 <A HREF="http://phf.apache.org/phf_abuse_log.cgi">http://phf.apache.org/phf_abuse_log.cgi</A></font>
+<font color="#00ffff">#&lt;/Location&gt;</font>
+
+<font color="#00ffff">### Section 3: Virtual Hosts</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># VirtualHost: If you want to maintain multiple domains/hostnames on your</font>
+<font color="#00ffff"># machine you can setup VirtualHost containers for them. Most configurations</font>
+<font color="#00ffff"># use only name-based virtual hosts so the server doesn't need to worry about</font>
+<font color="#00ffff"># IP addresses. This is indicated by the asterisks in the directives below.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Please see the documentation at &lt;URL:<A HREF="http://www.apache.org/docs/vhosts/">http://www.apache.org/docs/vhosts/</A>&gt;</font>
+<font color="#00ffff"># for further details before you try to setup virtual hosts.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff"># You may use the command line option '-S' to verify your virtual host</font>
+<font color="#00ffff"># configuration.</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># Use name-based virtual hosting.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#NameVirtualHost *:80</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff"># VirtualHost example:</font>
+<font color="#00ffff"># Almost any Apache directive may go into a VirtualHost container.</font>
+<font color="#00ffff"># The first VirtualHost section is used for requests without a known</font>
+<font color="#00ffff"># server name.</font>
+<font color="#00ffff">#</font>
+<font color="#00ffff">#&lt;VirtualHost *:80&gt;</font>
+<font color="#00ffff">#    ServerAdmin webmaster@dummy-host.example.com</font>
+<font color="#00ffff">#    DocumentRoot /www/docs/dummy-host.example.com</font>
+<font color="#00ffff">#    ServerName dummy-host.example.com</font>
+<font color="#00ffff">#    ErrorLog logs/dummy-host.example.com-error_log</font>
+<font color="#00ffff">#    CustomLog logs/dummy-host.example.com-access_log common</font>
+<font color="#00ffff">#&lt;/VirtualHost&gt;</font>
+
+<font color="#00ffff">#&lt;VirtualHost _default_:*&gt;</font>
+<font color="#00ffff">#&lt;/VirtualHost&gt;</font>
+
+<font color="#00ffff">##</font>
+<font color="#00ffff">##  SSL Global Context</font>
+<font color="#00ffff">##</font>
+<font color="#00ffff">##  All SSL configuration in this context applies both to</font>
+<font color="#00ffff">##  the main server and all SSL-enabled virtual hosts.</font>
+<font color="#00ffff">##</font>
+
+<font color="#00ffff">#</font>
+<font color="#00ffff">#   Some MIME-types for downloading Certificates and CRLs</font>
+<font color="#00ffff">#</font>
+<font color="#ffff00"><b>&lt;IfDefine</b></font><font color="#ff40ff"><b> SSL</b></font><font color="#ffff00"><b>&gt;</b></font>
+<font color="#ffffff"><b>AddType</b></font> application/x-x509-ca-cert .crt
+<font color="#ffffff"><b>AddType</b></font> application/x-pkcs7-crl    .crl
+<font color="#ffff00"><b>&lt;/IfDefine&gt;</b></font>
+
+<font color="#ffff00"><b>&lt;IfModule</b></font><font color="#ff40ff"><b> mod_ssl.c</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">#   Pass Phrase Dialog:</font>
+<font color="#00ffff">#   Configure the pass phrase gathering process.</font>
+<font color="#00ffff">#   The filtering dialog program (`builtin' is a internal</font>
+<font color="#00ffff">#   terminal dialog) has to provide the pass phrase on stdout.</font>
+<font color="#ffffff"><b>SSLPassPhraseDialog</b></font>  <font color="#ff40ff"><b>builtin</b></font>
+
+<font color="#00ffff">#   Inter-Process Session Cache:</font>
+<font color="#00ffff">#   Configure the SSL Session Cache: First the mechanism </font>
+<font color="#00ffff">#   to use and second the expiring timeout (in seconds).</font>
+<font color="#00ffff">#SSLSessionCache        none</font>
+<font color="#00ffff">#SSLSessionCache        shmht:/usr/local/dh/apache/logs/ssl_scache(512000)</font>
+<font color="#00ffff">#SSLSessionCache        shmcb:/usr/local/dh/apache/logs/ssl_scache(512000)</font>
+<font color="#ffffff"><b>SSLSessionCache</b></font>         <font color="#ff40ff"><b>dbm:</b></font>/usr/local/dh/apache/logs/ssl_scache
+<font color="#ffffff"><b>SSLSessionCacheTimeout</b></font>  300
+
+<font color="#00ffff">#   Semaphore:</font>
+<font color="#00ffff">#   Configure the path to the mutual exclusion semaphore the</font>
+<font color="#00ffff">#   SSL engine uses internally for inter-process synchronization. </font>
+<font color="#ffffff"><b>SSLMutex</b></font>  <font color="#ff40ff"><b>file:</b></font>/usr/local/dh/apache/logs/ssl_mutex
+
+<font color="#00ffff">#   Pseudo Random Number Generator (PRNG):</font>
+<font color="#00ffff">#   Configure one or more sources to seed the PRNG of the </font>
+<font color="#00ffff">#   SSL library. The seed data should be of good random quality.</font>
+<font color="#00ffff">#   WARNING! On some platforms /dev/random blocks if not enough entropy</font>
+<font color="#00ffff">#   is available. This means you then cannot use the /dev/random device</font>
+<font color="#00ffff">#   because it would lead to very long connection times (as long as</font>
+<font color="#00ffff">#   it requires to make more entropy available). But usually those</font>
+<font color="#00ffff">#   platforms additionally provide a /dev/urandom device which doesn't</font>
+<font color="#00ffff">#   block. So, if available, use this one instead. Read the mod_ssl User</font>
+<font color="#00ffff">#   Manual for more details.</font>
+<font color="#ffffff"><b>SSLRandomSeed</b></font> startup <font color="#ff40ff"><b>builtin</b></font>
+<font color="#ffffff"><b>SSLRandomSeed</b></font> connect <font color="#ff40ff"><b>builtin</b></font>
+<font color="#00ffff">#SSLRandomSeed startup file:/dev/random  512</font>
+<font color="#00ffff">#SSLRandomSeed startup file:/dev/urandom 512</font>
+<font color="#00ffff">#SSLRandomSeed connect file:/dev/random  512</font>
+<font color="#00ffff">#SSLRandomSeed connect file:/dev/urandom 512</font>
+
+<font color="#00ffff">#   Logging:</font>
+<font color="#00ffff">#   The home of the dedicated SSL protocol logfile. Errors are</font>
+<font color="#00ffff">#   additionally duplicated in the general error log file.  Put</font>
+<font color="#00ffff">#   this somewhere where it cannot be used for symlink attacks on</font>
+<font color="#00ffff">#   a real server (i.e. somewhere where only root can write).</font>
+<font color="#00ffff">#   Log levels are (ascending order: higher ones include lower ones):</font>
+<font color="#00ffff">#   none, error, warn, info, trace, debug.</font>
+<font color="#ffffff"><b>SSLLog</b></font>      /usr/local/dh/apache/logs/ssl_engine_log
+<font color="#ffffff"><b>SSLLogLevel</b></font> <font color="#ff40ff"><b>info</b></font>
+
+<font color="#ffff00"><b>&lt;/IfModule&gt;</b></font>
+
+<font color="#ffff00"><b>&lt;IfDefine</b></font><font color="#ff40ff"><b> SSL</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">##</font>
+<font color="#00ffff">## SSL Virtual Host Context</font>
+<font color="#00ffff">##</font>
+
+<font color="#ffff00"><b>&lt;VirtualHost</b></font><font color="#ff40ff"><b> _default_:8443</b></font><font color="#ffff00"><b>&gt;</b></font>
+
+<font color="#00ffff">#  General setup for the virtual host</font>
+<font color="#ffffff"><b>DocumentRoot</b></font> <font color="#ff40ff"><b>&quot;/usr/local/dh/apache/template/docs&quot;</b></font>
+<font color="#ffffff"><b>ServerName</b></font> hightower.sd.dreamhost.com
+<font color="#ffffff"><b>ServerAdmin</b></font> jeremy@hightower.sd.dreamhost.com
+<font color="#ffffff"><b>ErrorLog</b></font> /usr/local/dh/apache/logs/error_log
+<font color="#ffffff"><b>TransferLog</b></font> /usr/local/dh/apache/logs/access_log
+
+<font color="#00ffff">#   SSL Engine Switch:</font>
+<font color="#00ffff">#   Enable/Disable SSL for this virtual host.</font>
+<font color="#ffffff"><b>SSLEngine</b></font> <font color="#ff40ff"><b>on</b></font>
+
+<font color="#00ffff">#   SSL Cipher Suite:</font>
+<font color="#00ffff">#   List the ciphers that the client is permitted to negotiate.</font>
+<font color="#00ffff">#   See the mod_ssl documentation for a complete list.</font>
+<font color="#ffffff"><b>SSLCipherSuite</b></font> <font color="#ff40ff"><b>ALL</b></font>:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:<font color="#ff40ff"><b>+SSLv2</b></font>:+EXP:+eNULL
+
+<font color="#00ffff">#   Server Certificate:</font>
+<font color="#00ffff">#   Point SSLCertificateFile at a PEM encoded certificate.  If</font>
+<font color="#00ffff">#   the certificate is encrypted, then you will be prompted for a</font>
+<font color="#00ffff">#   pass phrase.  Note that a kill -HUP will prompt again. A test</font>
+<font color="#00ffff">#   certificate can be generated with `make certificate' under</font>
+<font color="#00ffff">#   built time. Keep in mind that if you've both a RSA and a DSA</font>
+<font color="#00ffff">#   certificate you can configure both in parallel (to also allow</font>
+<font color="#00ffff">#   the use of DSA ciphers, etc.)</font>
+<font color="#ffffff"><b>SSLCertificateFile</b></font> /usr/local/dh/apache/template/etc/ssl.crt/server.crt
+<font color="#00ffff">#SSLCertificateFile /usr/local/dh/apache/template/etc/ssl.crt/server-dsa.crt</font>
+
+<font color="#00ffff">#   Server Private Key:</font>
+<font color="#00ffff">#   If the key is not combined with the certificate, use this</font>
+<font color="#00ffff">#   directive to point at the key file.  Keep in mind that if</font>
+<font color="#00ffff">#   you've both a RSA and a DSA private key you can configure</font>
+<font color="#00ffff">#   both in parallel (to also allow the use of DSA ciphers, etc.)</font>
+<font color="#ffffff"><b>SSLCertificateKeyFile</b></font> /usr/local/dh/apache/template/etc/ssl.key/server.key
+<font color="#00ffff">#SSLCertificateKeyFile /usr/local/dh/apache/template/etc/ssl.key/server-dsa.key</font>
+
+<font color="#00ffff">#   Server Certificate Chain:</font>
+<font color="#00ffff">#   Point SSLCertificateChainFile at a file containing the</font>
+<font color="#00ffff">#   concatenation of PEM encoded CA certificates which form the</font>
+<font color="#00ffff">#   certificate chain for the server certificate. Alternatively</font>
+<font color="#00ffff">#   the referenced file can be the same as SSLCertificateFile</font>
+<font color="#00ffff">#   when the CA certificates are directly appended to the server</font>
+<font color="#00ffff">#   certificate for convinience.</font>
+<font color="#00ffff">#SSLCertificateChainFile /usr/local/dh/apache/template/etc/ssl.crt/ca.crt</font>
+
+<font color="#00ffff">#   Certificate Authority (CA):</font>
+<font color="#00ffff">#   Set the CA certificate verification path where to find CA</font>
+<font color="#00ffff">#   certificates for client authentication or alternatively one</font>
+<font color="#00ffff">#   huge file containing all of them (file must be PEM encoded)</font>
+<font color="#00ffff">#   Note: Inside SSLCACertificatePath you need hash symlinks</font>
+<font color="#00ffff">#         to point to the certificate files. Use the provided</font>
+<font color="#00ffff">#         Makefile to update the hash symlinks after changes.</font>
+<font color="#00ffff">#SSLCACertificatePath /usr/local/dh/apache/template/etc/ssl.crt</font>
+<font color="#00ffff">#SSLCACertificateFile /usr/local/dh/apache/template/etc/ssl.crt/ca-bundle.crt</font>
+
+<font color="#00ffff">#   Certificate Revocation Lists (CRL):</font>
+<font color="#00ffff">#   Set the CA revocation path where to find CA CRLs for client</font>
+<font color="#00ffff">#   authentication or alternatively one huge file containing all</font>
+<font color="#00ffff">#   of them (file must be PEM encoded)</font>
+<font color="#00ffff">#   Note: Inside SSLCARevocationPath you need hash symlinks</font>
+<font color="#00ffff">#         to point to the certificate files. Use the provided</font>
+<font color="#00ffff">#         Makefile to update the hash symlinks after changes.</font>
+<font color="#00ffff">#SSLCARevocationPath /usr/local/dh/apache/template/etc/ssl.crl</font>
+<font color="#00ffff">#SSLCARevocationFile /usr/local/dh/apache/template/etc/ssl.crl/ca-bundle.crl</font>
+
+<font color="#00ffff">#   Client Authentication (Type):</font>
+<font color="#00ffff">#   Client certificate verification type and depth.  Types are</font>
+<font color="#00ffff">#   none, optional, require and optional_no_ca.  Depth is a</font>
+<font color="#00ffff">#   number which specifies how deeply to verify the certificate</font>
+<font color="#00ffff">#   issuer chain before deciding the certificate is not valid.</font>
+<font color="#00ffff">#SSLVerifyClient require</font>
+<font color="#00ffff">#SSLVerifyDepth  10</font>
+
+<font color="#00ffff">#   Access Control:</font>
+<font color="#00ffff">#   With SSLRequire you can do per-directory access control based</font>
+<font color="#00ffff">#   on arbitrary complex boolean expressions containing server</font>
+<font color="#00ffff">#   variable checks and other lookup directives.  The syntax is a</font>
+<font color="#00ffff">#   mixture between C and Perl.  See the mod_ssl documentation</font>
+<font color="#00ffff">#   for more details.</font>
+<font color="#00ffff">#&lt;Location /&gt;</font>
+<font color="#00ffff">#SSLRequire (    %{SSL_CIPHER} !~ m/^(EXP|NULL)/ \</font>
+<font color="#00ffff">#            and %{SSL_CLIENT_S_DN_O} eq &quot;Snake Oil, Ltd.&quot; \</font>
+<font color="#00ffff">#            and %{SSL_CLIENT_S_DN_OU} in {&quot;Staff&quot;, &quot;CA&quot;, &quot;Dev&quot;} \</font>
+<font color="#00ffff">#            and %{TIME_WDAY} &gt;= 1 and %{TIME_WDAY} &lt;= 5 \</font>
+<font color="#00ffff">#            and %{TIME_HOUR} &gt;= 8 and %{TIME_HOUR} &lt;= 20       ) \</font>
+<font color="#00ffff">#           or %{REMOTE_ADDR} =~ m/^192\.76\.162\.[0-9]+$/</font>
+<font color="#00ffff">#&lt;/Location&gt;</font>
+
+<font color="#00ffff">#   SSL Engine Options:</font>
+<font color="#00ffff">#   Set various options for the SSL engine.</font>
+<font color="#00ffff">#   o FakeBasicAuth:</font>
+<font color="#00ffff">#     Translate the client X.509 into a Basic Authorisation.  This means that</font>
+<font color="#00ffff">#     the standard Auth/DBMAuth methods can be used for access control.  The</font>
+<font color="#00ffff">#     user name is the `one line' version of the client's X.509 certificate.</font>
+<font color="#00ffff">#     Note that no password is obtained from the user. Every entry in the user</font>
+<font color="#00ffff">#     file needs this password: `xxj31ZMTZzkVA'.</font>
+<font color="#00ffff">#   o ExportCertData:</font>
+<font color="#00ffff">#     This exports two additional environment variables: SSL_CLIENT_CERT and</font>
+<font color="#00ffff">#     SSL_SERVER_CERT. These contain the PEM-encoded certificates of the</font>
+<font color="#00ffff">#     server (always existing) and the client (only existing when client</font>
+<font color="#00ffff">#     authentication is used). This can be used to import the certificates</font>
+<font color="#00ffff">#     into CGI scripts.</font>
+<font color="#00ffff">#   o StdEnvVars:</font>
+<font color="#00ffff">#     This exports the standard SSL/TLS related `SSL_*' environment variables.</font>
+<font color="#00ffff">#     Per default this exportation is switched off for performance reasons,</font>
+<font color="#00ffff">#     because the extraction step is an expensive operation and is usually</font>
+<font color="#00ffff">#     useless for serving static content. So one usually enables the</font>
+<font color="#00ffff">#     exportation for CGI and SSI requests only.</font>
+<font color="#00ffff">#   o CompatEnvVars:</font>
+<font color="#00ffff">#     This exports obsolete environment variables for backward compatibility</font>
+<font color="#00ffff">#     to Apache-SSL 1.x, mod_ssl 2.0.x, Sioux 1.0 and Stronghold 2.x. Use this</font>
+<font color="#00ffff">#     to provide compatibility to existing CGI scripts.</font>
+<font color="#00ffff">#   o StrictRequire:</font>
+<font color="#00ffff">#     This denies access when &quot;SSLRequireSSL&quot; or &quot;SSLRequire&quot; applied even</font>
+<font color="#00ffff">#     under a &quot;Satisfy any&quot; situation, i.e. when it applies access is denied</font>
+<font color="#00ffff">#     and no other module can change it.</font>
+<font color="#00ffff">#   o OptRenegotiate:</font>
+<font color="#00ffff">#     This enables optimized SSL connection renegotiation handling when SSL</font>
+<font color="#00ffff">#     directives are used in per-directory context. </font>
+<font color="#00ffff">#SSLOptions +FakeBasicAuth +ExportCertData +CompatEnvVars +StrictRequire</font>
+<font color="#ffff00"><b>&lt;Files</b></font><font color="#ff40ff"><b> ~ &quot;\.(cgi|shtml|phtml|php3?)$&quot;</b></font><font color="#ffff00"><b>&gt;</b></font>
+    <font color="#ffffff"><b>SSLOptions</b></font> <font color="#ff40ff"><b>+StdEnvVars</b></font>
+<font color="#ffff00"><b>&lt;/Files&gt;</b></font>
+<font color="#ffff00"><b>&lt;Directory</b></font><font color="#ff40ff"><b> &quot;/usr/local/dh/web/cgi-bin&quot;</b></font><font color="#ffff00"><b>&gt;</b></font>
+    <font color="#ffffff"><b>SSLOptions</b></font> <font color="#ff40ff"><b>+StdEnvVars</b></font>
+<font color="#ffff00"><b>&lt;/Directory&gt;</b></font>
+
+<font color="#00ffff">#   SSL Protocol Adjustments:</font>
+<font color="#00ffff">#   The safe and default but still SSL/TLS standard compliant shutdown</font>
+<font color="#00ffff">#   approach is that mod_ssl sends the close notify alert but doesn't wait for</font>
+<font color="#00ffff">#   the close notify alert from client. When you need a different shutdown</font>
+<font color="#00ffff">#   approach you can use one of the following variables:</font>
+<font color="#00ffff">#   o ssl-unclean-shutdown:</font>
+<font color="#00ffff">#     This forces an unclean shutdown when the connection is closed, i.e. no</font>
+<font color="#00ffff">#     SSL close notify alert is send or allowed to received.  This violates</font>
+<font color="#00ffff">#     the SSL/TLS standard but is needed for some brain-dead browsers. Use</font>
+<font color="#00ffff">#     this when you receive I/O errors because of the standard approach where</font>
+<font color="#00ffff">#     mod_ssl sends the close notify alert.</font>
+<font color="#00ffff">#   o ssl-accurate-shutdown:</font>
+<font color="#00ffff">#     This forces an accurate shutdown when the connection is closed, i.e. a</font>
+<font color="#00ffff">#     SSL close notify alert is send and mod_ssl waits for the close notify</font>
+<font color="#00ffff">#     alert of the client. This is 100% SSL/TLS standard compliant, but in</font>
+<font color="#00ffff">#     practice often causes hanging connections with brain-dead browsers. Use</font>
+<font color="#00ffff">#     this only for browsers where you know that their SSL implementation</font>
+<font color="#00ffff">#     works correctly. </font>
+<font color="#00ffff">#   Notice: Most problems of broken clients are also related to the HTTP</font>
+<font color="#00ffff">#   keep-alive facility, so you usually additionally want to disable</font>
+<font color="#00ffff">#   keep-alive for those clients, too. Use variable &quot;nokeepalive&quot; for this.</font>
+<font color="#00ffff">#   Similarly, one has to force some clients to use HTTP/1.0 to workaround</font>
+<font color="#00ffff">#   their broken HTTP/1.1 implementation. Use variables &quot;downgrade-1.0&quot; and</font>
+<font color="#00ffff">#   &quot;force-response-1.0&quot; for this.</font>
+<font color="#ffffff"><b>SetEnvIf</b></font> <font color="#ff40ff"><b>User</b></font>-Agent <font color="#ff40ff"><b>&quot;.*MSIE.*&quot;</b></font> \
+         nokeepalive ssl-unclean-shutdown \
+         downgrade-1.0 force-response-1.0
+
+<font color="#00ffff">#   Per-Server Logging:</font>
+<font color="#00ffff">#   The home of a custom SSL log file. Use this when you want a</font>
+<font color="#00ffff">#   compact non-error SSL logfile on a virtual host basis.</font>
+<font color="#ffffff"><b>CustomLog</b></font> /usr/local/dh/apache/logs/ssl_request_log \
+          <font color="#ff40ff"><b>&quot;%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \&quot;%r\&quot; %b&quot;</b></font>
+
+<font color="#ffff00"><b>&lt;/VirtualHost&gt;</b></font>
+
+<font color="#ffff00"><b>&lt;/IfDefine&gt;</b></font>
+
+</pre>
+</body>
+</html>
